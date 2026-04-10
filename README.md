@@ -1,6 +1,6 @@
 # MiSTer_OpenBOR
 
-Hybrid ARM+FPGA OpenBOR core for MiSTer FPGA with native video output. Forked from [SumolX/MiSTer_OpenBOR](https://github.com/SumolX/MiSTer_OpenBOR) — the original MiSTer OpenBOR port by [SumolX](https://github.com/SumolX), who was the first person to bring OpenBOR to the MiSTer platform.
+Hybrid ARM+FPGA OpenBOR core for MiSTer FPGA with native video output. Based on the work of [SumolX](https://github.com/SumolX), who created the [original MiSTer OpenBOR port](https://github.com/SumolX/MiSTer_OpenBOR) and was the first person to bring OpenBOR to the MiSTer platform.
 
 ## Features
 
