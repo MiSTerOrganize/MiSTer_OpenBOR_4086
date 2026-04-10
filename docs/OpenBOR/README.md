@@ -1,6 +1,6 @@
-# MiSTer OpenBOR — Native Video FPGA Core
+# MiSTer_OpenBOR
 
-An OpenBOR beat-'em-up game engine for the MiSTer FPGA platform with native video output. The FPGA handles video timing and output directly, bypassing the MiSTer scaler for zero-lag CRT support with scanlines and shadow masks.
+Hybrid ARM+FPGA OpenBOR core for MiSTer FPGA with native video output. Inspired by the work of [SumolX](https://github.com/SumolX), who created the [first OpenBOR port for MiSTer](https://github.com/SumolX/MiSTer_OpenBOR).
 
 ## Features
 
@@ -10,7 +10,7 @@ An OpenBOR beat-'em-up game engine for the MiSTer FPGA platform with native vide
 - **Hot-swap PAKs** — load a new PAK from the OSD while a game is playing
 - **4-player support** — connect up to 4 controllers, add players by pressing START
 - **Controller support** — d-pad, analog stick, and button mapping through MiSTer's input system
-- **Custom pause menu** — Continue / Options / Reset Pak / Quit (matches PICO-8 core style)
+- **Custom pause menu** — Continue / Options / Reset Pak / Quit
 - **Auto-launch** — OpenBOR starts automatically when the core is loaded
 
 ## Quick Install
@@ -31,10 +31,10 @@ Extract the release zip to the root of your MiSTer SD card (`/media/fat/`). The 
 │   └── OpenBOR_YYYYMMDD.rbf               FPGA core (dated build)
 ├── config/
 │   └── inputs/
-│       └── OpenBOR_input_045e_0b12_v3.map  Xbox controller map (generated from OSD)
+│       └── OpenBOR_input_045e_0b12_v3.map  Controller map (generated from OSD)
 ├── docs/
 │   └── OpenBOR/
-│       └── README.md                       This file
+│       └── README.md                       Documentation
 ├── games/
 │   └── OpenBOR/
 │       ├── OpenBOR                         ARM binary (engine)
@@ -48,24 +48,22 @@ Extract the release zip to the root of your MiSTer SD card (`/media/fat/`). The 
 
 ## Game Modules (PAK Files)
 
-Place your OpenBOR PAK files in `/media/fat/games/OpenBOR/Paks/`. A large collection is available at the [OpenBOR-Packs archive](https://archive.org/details/OpenBOR-Paks).
+Place your OpenBOR PAK files in `/media/fat/games/OpenBOR/Paks/`.
 
-Build 3979 runs the vast majority of mods in the archive, including Streets of Rage Remake, Final Fight LNS, Golden Axe Remake, Turtles Ninjas and Battletoads, Simpsons Treehouse of Horror, and most of the LaunchBox OpenBOR collection.
+Build 3979 runs the vast majority of OpenBOR mods, including Streets of Rage Remake, Final Fight LNS, Golden Axe Remake, Turtles Ninjas and Battletoads, Simpsons Treehouse of Horror, and most of the LaunchBox OpenBOR collection.
 
-## Controller Mapping
+## Controls
 
-Default mapping for Xbox Series X controller:
-
-| Button        | Xbox           | OpenBOR Action          |
-|---------------|----------------|-------------------------|
-| Jump          | A              | Jump / confirm in menus |
-| Punch         | B              | Attack                  |
-| Special       | X              | Special / back in menus |
-| Block         | Y              | Block                   |
-| Start         | Start          | Pause / add player      |
-| Select        | Back           | Quit to MiSTer menu     |
-| Move          | D-pad / Analog | Move character          |
-| Guide         | Xbox button    | Quit (secondary)        |
+| Xbox Controller | Action                  |
+|-----------------|-------------------------|
+| A               | Jump / confirm in menus |
+| B               | Punch                   |
+| X               | Special / back in menus |
+| Y               | Block                   |
+| D-pad / Analog  | Move                    |
+| Start           | Pause / add player      |
+| Select          | Quit                    |
+| Xbox button     | MiSTer OSD menu         |
 
 All 4 players use the same button layout. Remap buttons from the MiSTer OSD (press F12 on keyboard, or the OSD button on your IO board).
 
@@ -75,7 +73,7 @@ Press START during gameplay:
 
 - **Continue** — resume gameplay
 - **Options** — adjust Music Volume and SFX Volume with D-pad left/right, select Back to return
-- **Reset Pak** — restart the PAK from its title screen (same as Reset Cart in PICO-8)
+- **Reset Pak** — restart the PAK from its title screen
 - **Quit** — exit to PAK browser
 
 Navigate with D-pad up/down. Press A to choose, X to go back.
@@ -97,7 +95,10 @@ This core runs OpenBOR Build 3979, cross-compiled for MiSTer's ARM Cortex-A9 fro
 
 ## Credits
 
-- **SumolX** — Created the [original MiSTer OpenBOR port](https://github.com/SumolX/MiSTer_OpenBOR), the first person to bring OpenBOR to the MiSTer platform
+- **SumolX** — Created the [first OpenBOR port for MiSTer](https://github.com/SumolX/MiSTer_OpenBOR)
 - **OpenBOR Team** — Senile Team, ChronoCrash community, DCurrent, Plombo, Utunnels, White Dragon. Visit [chronocrash.com](https://www.chronocrash.com)
-- **MiSTer Organize** — FPGA hybrid core, Build 3979 ARM upgrade, custom pause menu
 - **Sorgelig & MiSTer Community** — MiSTer FPGA framework
+
+## License
+
+GPL-3.0. See LICENSE. OpenBOR itself is BSD-3-Clause.

@@ -1,68 +1,102 @@
 # MiSTer_OpenBOR
 
-Hybrid ARM+FPGA OpenBOR core for MiSTer FPGA with native video output. Based on the work of [SumolX](https://github.com/SumolX), who created the [original MiSTer OpenBOR port](https://github.com/SumolX/MiSTer_OpenBOR) and was the first person to bring OpenBOR to the MiSTer platform.
+Hybrid ARM+FPGA OpenBOR core for MiSTer FPGA with native video output. Inspired by the work of [SumolX](https://github.com/SumolX), who created the [first OpenBOR port for MiSTer](https://github.com/SumolX/MiSTer_OpenBOR).
 
 ## Features
 
-- 320×240 native FPGA video output with CRT scanline and shadow mask support
-- OpenBOR Build 3979 — runs the vast majority of the OpenBOR mod catalog
-- Load PAK files from the MiSTer OSD file browser
-- 4-player support with per-player button remapping
-- Custom pause menu: Continue / Options / Reset Pak / Quit
+- **Native FPGA video output** — 320×240 @ ~59.45Hz through MiSTer's native video pipeline
+- **CRT support** — scanlines, shadow masks, and analog video output for CRT displays
+- **MiSTer OSD integration** — load PAK files from the file browser
+- **Hot-swap PAKs** — load a new PAK from the OSD while a game is playing
+- **4-player support** — connect up to 4 controllers, add players by pressing START
+- **Controller support** — d-pad, analog stick, and button mapping through MiSTer's input system
+- **Custom pause menu** — Continue / Options / Reset Pak / Quit
+- **Auto-launch** — OpenBOR starts automatically when the core is loaded
 
 ## Quick Install
 
 1. Copy `Scripts/Install_OpenBOR.sh` to `/media/fat/Scripts/` on your MiSTer SD card
-2. Run **Install_OpenBOR** from the Scripts menu
-3. Load **OpenBOR** from the console menu
+2. From the MiSTer main menu, go to Scripts and run **Install_OpenBOR**
+3. Done — load **OpenBOR** from the console menu to play
 
-## PAK Files
+The install script downloads and installs everything: the FPGA core, ARM binary, and controller mapping.
 
-Place your OpenBOR game modules in `/media/fat/games/OpenBOR/Paks/`
+## Manual Install
 
-A large collection is available at the [OpenBOR-Packs archive](https://archive.org/details/OpenBOR-Paks).
-
-## Controller Mapping
-
-| Button   | Xbox Series X | Action                  |
-|----------|---------------|-------------------------|
-| A        | A             | Jump / confirm in menus |
-| B        | B             | Punch                   |
-| X        | X             | Special / back in menus |
-| Y        | Y             | Block                   |
-| Start    | Start         | Pause / add player      |
-| Select   | Back          | Quit                    |
-
-## SD Card Layout
+Extract the release zip to the root of your MiSTer SD card (`/media/fat/`). The folder structure mirrors the SD card layout:
 
 ```
 /media/fat/
 ├── _Console/
-│   └── OpenBOR_YYYYMMDD.rbf               FPGA core
+│   └── OpenBOR_YYYYMMDD.rbf               FPGA core (dated build)
 ├── config/
 │   └── inputs/
 │       └── OpenBOR_input_045e_0b12_v3.map  Controller map (generated from OSD)
 ├── docs/
 │   └── OpenBOR/
-│       └── README.md                       Full documentation
+│       └── README.md                       Documentation
 ├── games/
 │   └── OpenBOR/
-│       ├── OpenBOR                         ARM binary
+│       ├── OpenBOR                         ARM binary (engine)
 │       ├── openbor_daemon.sh               Auto-launch daemon
-│       └── Paks/                           Place your .pak files here
+│       └── Paks/                           Place your .pak game modules here
 ├── saves/
-│   └── OpenBOR/                            Game saves
+│   └── OpenBOR/                            Game saves (created automatically)
 └── Scripts/
     └── Install_OpenBOR.sh                  Install script
 ```
 
-See [docs/OpenBOR/README.md](docs/OpenBOR/README.md) for full documentation, technical details, and build instructions.
+## Game Modules (PAK Files)
+
+Place your OpenBOR PAK files in `/media/fat/games/OpenBOR/Paks/`.
+
+Build 3979 runs the vast majority of OpenBOR mods, including Streets of Rage Remake, Final Fight LNS, Golden Axe Remake, Turtles Ninjas and Battletoads, Simpsons Treehouse of Horror, and most of the LaunchBox OpenBOR collection.
+
+## Controls
+
+| Xbox Controller | Action                  |
+|-----------------|-------------------------|
+| A               | Jump / confirm in menus |
+| B               | Punch                   |
+| X               | Special / back in menus |
+| Y               | Block                   |
+| D-pad / Analog  | Move                    |
+| Start           | Pause / add player      |
+| Select          | Quit                    |
+| Xbox button     | MiSTer OSD menu         |
+
+All 4 players use the same button layout. Remap buttons from the MiSTer OSD (press F12 on keyboard, or the OSD button on your IO board).
+
+## Pause Menu
+
+Press START during gameplay:
+
+- **Continue** — resume gameplay
+- **Options** — adjust Music Volume and SFX Volume with D-pad left/right, select Back to return
+- **Reset Pak** — restart the PAK from its title screen
+- **Quit** — exit to PAK browser
+
+Navigate with D-pad up/down. Press A to choose, X to go back.
+
+## FPGA Technical Details
+
+- Resolution: 320×240 active, 500×263 total
+- Refresh: 7,812,500 / (500×263) = ~59.45 Hz
+- H-sync: 7,812,500 / 500 = 15,625 Hz (NTSC-compatible)
+- Pixel clock: 31.25 MHz CLK_VIDEO / 4 = 7.8125 MHz effective
+- Pixel format: RGB565 (16 bits per pixel)
+- Frame size: 320 × 240 × 2 = 153,600 bytes
+- DDR3 bandwidth: 153,600 × 60 = ~9.2 MB/s
+- Double-buffered via DDR3 with ARM writing one buffer while FPGA reads the other
+
+## OpenBOR Build Info
+
+This core runs OpenBOR Build 3979, cross-compiled for MiSTer's ARM Cortex-A9 from the [rofl0r/openbor](https://github.com/rofl0r/openbor) SVN branch (commit 3b0a718). Built with arm-linux-gnueabihf-gcc 13.3.0, SDL 1.2.15, libvorbis/libogg statically linked.
 
 ## Credits
 
-- **SumolX** — Original [MiSTer OpenBOR port](https://github.com/SumolX/MiSTer_OpenBOR)
-- **OpenBOR Team** — [chronocrash.com](https://www.chronocrash.com)
-- **MiSTer Organize** — FPGA hybrid core, Build 3979 upgrade, custom pause menu
+- **SumolX** — Created the [first OpenBOR port for MiSTer](https://github.com/SumolX/MiSTer_OpenBOR)
+- **OpenBOR Team** — Senile Team, ChronoCrash community, DCurrent, Plombo, Utunnels, White Dragon. Visit [chronocrash.com](https://www.chronocrash.com)
 - **Sorgelig & MiSTer Community** — MiSTer FPGA framework
 
 ## License
