@@ -1,0 +1,196 @@
+//
+//  Native Video DDR3 Writer — OpenBOR MiSTer
+//
+//  Writes 320x240 RGB565 frames to DDR3 at 0x3A000000 for FPGA native
+//  video output. Double-buffered with control word handshake.
+//
+//  DDR3 Memory Map (must match openbor_video_reader.sv):
+//    0x3A000000 + 0x000     : Control word (frame_counter[31:2] | active_buf[1:0])
+//    0x3A000000 + 0x008     : Joystick P1 (32 bits)
+//    0x3A000000 + 0x010     : Cart control (file_size from FPGA)
+//    0x3A000000 + 0x018     : Joystick P2 (32 bits)
+//    0x3A000000 + 0x020     : Joystick P3 (32 bits)
+//    0x3A000000 + 0x028     : Joystick P4 (32 bits)
+//    0x3A000000 + 0x040     : Buffer 0 (320*240*2 = 153,600 bytes)
+//    0x3A000000 + 0x40040   : Buffer 1 (153,600 bytes)
+//    0x3A000000 + 0x80000   : Cart data (PAK file from OSD)
+//
+//  Copyright (C) 2026 MiSTer Organize — GPL-3.0
+//
+
+#include "native_video_writer.h"
+
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <stdint.h>
+
+#define NV_DDR_PHYS_BASE    0x3A000000u
+#define NV_DDR_REGION_SIZE  0x00100000u   /* 1MB covers buffers + control + cart data */
+#define NV_CTRL_OFFSET      0x00000000u
+#define NV_JOY0_OFFSET      0x00000008u
+#define NV_CART_CTRL_OFFSET  0x00000010u
+#define NV_JOY1_OFFSET      0x00000018u
+#define NV_JOY2_OFFSET      0x00000020u
+#define NV_JOY3_OFFSET      0x00000028u
+#define NV_BUF0_OFFSET      0x00000040u
+#define NV_BUF1_OFFSET      0x00040040u
+#define NV_CART_DATA_OFFSET  0x00080000u
+#define NV_CART_MAX_SIZE     0x00040000u  /* 256KB max PAK size via OSD */
+#define NV_FRAME_WIDTH      320
+#define NV_FRAME_HEIGHT     240
+#define NV_FRAME_BYTES      (NV_FRAME_WIDTH * NV_FRAME_HEIGHT * 2)  /* 153,600 */
+
+static const uint32_t joy_offsets[4] = {
+    NV_JOY0_OFFSET, NV_JOY1_OFFSET, NV_JOY2_OFFSET, NV_JOY3_OFFSET
+};
+
+static int mem_fd = -1;
+static volatile uint8_t* ddr_base = NULL;
+static uint32_t frame_counter = 0;
+static int active_buf = 0;
+
+bool NativeVideoWriter_Init(void) {
+    mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+    if (mem_fd < 0) {
+        perror("NativeVideoWriter: open /dev/mem");
+        return false;
+    }
+
+    ddr_base = (volatile uint8_t*)mmap(NULL, NV_DDR_REGION_SIZE,
+        PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, NV_DDR_PHYS_BASE);
+    if (ddr_base == MAP_FAILED) {
+        perror("NativeVideoWriter: mmap");
+        ddr_base = NULL;
+        close(mem_fd);
+        mem_fd = -1;
+        return false;
+    }
+
+    /* Clear both buffers and control words */
+    memset((void*)(ddr_base + NV_BUF0_OFFSET), 0, NV_FRAME_BYTES);
+    memset((void*)(ddr_base + NV_BUF1_OFFSET), 0, NV_FRAME_BYTES);
+    volatile uint32_t* ctrl = (volatile uint32_t*)(ddr_base + NV_CTRL_OFFSET);
+    *ctrl = 0;
+    volatile uint32_t* cart_ctrl = (volatile uint32_t*)(ddr_base + NV_CART_CTRL_OFFSET);
+    *cart_ctrl = 0;
+    frame_counter = 0;
+    active_buf = 0;
+
+    fprintf(stderr, "NativeVideoWriter: mapped 0x%08X, %dx%d @ %d bytes/frame\n",
+            NV_DDR_PHYS_BASE, NV_FRAME_WIDTH, NV_FRAME_HEIGHT, NV_FRAME_BYTES);
+    return true;
+}
+
+void NativeVideoWriter_Shutdown(void) {
+    if (ddr_base) {
+        volatile uint32_t* ctrl = (volatile uint32_t*)(ddr_base + NV_CTRL_OFFSET);
+        *ctrl = 0;
+        munmap((void*)ddr_base, NV_DDR_REGION_SIZE);
+        ddr_base = NULL;
+    }
+    if (mem_fd >= 0) {
+        close(mem_fd);
+        mem_fd = -1;
+    }
+}
+
+void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
+                                  int bpp, const void* palette) {
+    if (!ddr_base) return;
+
+    /* Clamp to frame dimensions */
+    if (width > NV_FRAME_WIDTH) width = NV_FRAME_WIDTH;
+    if (height > NV_FRAME_HEIGHT) height = NV_FRAME_HEIGHT;
+    if (width <= 0 || height <= 0) return;
+
+    uint32_t buf_offset = (active_buf == 0) ? NV_BUF0_OFFSET : NV_BUF1_OFFSET;
+    volatile uint16_t* dst = (volatile uint16_t*)(ddr_base + buf_offset);
+
+    if (bpp == 16) {
+        /* RGB565 — direct copy, most common OpenBOR mode.
+         * Source pitch may differ from width*2 if SDL adds padding,
+         * but for 320-wide surfaces it's typically exact. */
+        const uint16_t* src16 = (const uint16_t*)pixels;
+        int dst_stride = NV_FRAME_WIDTH;
+        for (int y = 0; y < height; y++) {
+            memcpy((void*)(dst + y * dst_stride), src16 + y * width, width * 2);
+        }
+    }
+    else if (bpp == 8 && palette) {
+        /* 8bpp paletted — convert through palette to RGB565.
+         * Palette entries are SDL_Color: {r, g, b, unused} = 4 bytes each. */
+        const uint8_t* src8 = (const uint8_t*)pixels;
+        const uint8_t* pal = (const uint8_t*)palette;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                uint8_t idx = src8[y * width + x];
+                uint8_t r = pal[idx * 4 + 0];
+                uint8_t g = pal[idx * 4 + 1];
+                uint8_t b = pal[idx * 4 + 2];
+                dst[y * NV_FRAME_WIDTH + x] =
+                    (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+            }
+        }
+    }
+    else if (bpp == 32) {
+        /* 32bpp RGBA/BGRA — convert to RGB565.
+         * OpenBOR uses BGRA ordering on little-endian ARM. */
+        const uint8_t* src32 = (const uint8_t*)pixels;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int i = (y * width + x) * 4;
+                uint8_t b = src32[i + 0];
+                uint8_t g = src32[i + 1];
+                uint8_t r = src32[i + 2];
+                dst[y * NV_FRAME_WIDTH + x] =
+                    (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+            }
+        }
+    }
+    else {
+        return;  /* unsupported format, skip frame */
+    }
+
+    /* Flip control word */
+    frame_counter++;
+    volatile uint32_t* ctrl = (volatile uint32_t*)(ddr_base + NV_CTRL_OFFSET);
+    *ctrl = (frame_counter << 2) | (active_buf & 1);
+    active_buf ^= 1;
+}
+
+bool NativeVideoWriter_IsActive(void) {
+    return ddr_base != NULL;
+}
+
+uint32_t NativeVideoWriter_CheckCart(void) {
+    if (!ddr_base) return 0;
+    volatile uint32_t *ctrl = (volatile uint32_t *)(ddr_base + NV_CART_CTRL_OFFSET);
+    uint32_t val = *ctrl;
+    if (val > NV_CART_MAX_SIZE) return 0;
+    return val;
+}
+
+uint32_t NativeVideoWriter_ReadCart(void* buf, uint32_t max_size) {
+    if (!ddr_base || !buf) return 0;
+    uint32_t file_size = NativeVideoWriter_CheckCart();
+    if (file_size == 0) return 0;
+    if (file_size > max_size) file_size = max_size;
+    if (file_size > NV_CART_MAX_SIZE) file_size = NV_CART_MAX_SIZE;
+    memcpy(buf, (const void *)(ddr_base + NV_CART_DATA_OFFSET), file_size);
+    return file_size;
+}
+
+void NativeVideoWriter_AckCart(void) {
+    if (!ddr_base) return;
+    volatile uint32_t *ctrl = (volatile uint32_t *)(ddr_base + NV_CART_CTRL_OFFSET);
+    *ctrl = 0;
+}
+
+uint32_t NativeVideoWriter_ReadJoystick(int player) {
+    if (!ddr_base || player < 0 || player > 3) return 0;
+    volatile uint32_t *joy = (volatile uint32_t *)(ddr_base + joy_offsets[player]);
+    return *joy;
+}
