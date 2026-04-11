@@ -2,33 +2,21 @@
  * MiSTer_OpenBOR — Input Patch for sdl/control.c
  *
  * Bypasses SDL joystick input and reads directly from DDR3 where the
- * FPGA writes MiSTer controller state. This is necessary because
- * MiSTer's main binary grabs exclusive access to USB input devices
- * when an FPGA core is loaded.
+ * FPGA writes MiSTer controller state.
  *
- * PATCH: In sdl/control.c, find the control_update() function (around line 566).
+ * PATCH: In sdl/control.c, replace the control_update() function.
  *
- * Step 1: Add this include at the top of control.c, after the other includes:
- *
- *   #ifdef MISTER_NATIVE_VIDEO
- *   #include "native_video_writer.h"
- *   #include "openbor.h"
- *   #endif
- *
- * Step 2: In control_update(), find the main loop body (around line 576-609).
- *         Replace the entire function body with the version below.
- *
- * The MiSTer joystick bitmask from hps_io is:
+ * MiSTer joystick bitmask (from hps_io):
  *   bit 0  = Right       → FLAG_MOVERIGHT
  *   bit 1  = Left        → FLAG_MOVELEFT
  *   bit 2  = Down        → FLAG_MOVEDOWN
  *   bit 3  = Up          → FLAG_MOVEUP
- *   bit 4  = Button 0 (A)    → FLAG_JUMP
- *   bit 5  = Button 1 (B)    → FLAG_ATTACK
- *   bit 6  = Button 2 (X)    → FLAG_SPECIAL
- *   bit 7  = Button 3 (Y)    → FLAG_ATTACK2 (block)
+ *   bit 4  = Button 0 (A)    → FLAG_ATTACK  (Attack/confirm)
+ *   bit 5  = Button 1 (B)    → FLAG_JUMP    (Jump)
+ *   bit 6  = Button 2 (X)    → FLAG_SPECIAL (Special)
+ *   bit 7  = Button 3 (Y)    → FLAG_ATTACK2 (Attack2)
  *   bit 8  = Button 4 (Start) → FLAG_START
- *   bit 9  = Button 5 (Select) → exit(0) (immediate quit)
+ *   bit 9  = Button 5 (Select) → exit(0) (Quit)
  *
  * Copyright (C) 2026 MiSTer Organize — GPL-3.0
  */
@@ -62,11 +50,11 @@ void control_update(s_playercontrols ** playercontrols, int numplayers)
             if (joy & 0x002) k |= FLAG_MOVELEFT;
             if (joy & 0x004) k |= FLAG_MOVEDOWN;
             if (joy & 0x008) k |= FLAG_MOVEUP;
-            if (joy & 0x010) k |= FLAG_JUMP;       /* A = Jump */
-            if (joy & 0x020) k |= FLAG_ATTACK;     /* B = Punch */
+            if (joy & 0x010) k |= FLAG_ATTACK;     /* A = Attack */
+            if (joy & 0x020) k |= FLAG_JUMP;       /* B = Jump */
             if (joy & 0x040) k |= FLAG_SPECIAL;    /* X = Special */
-            if (joy & 0x080) k |= FLAG_ATTACK2;    /* Y = Block */
-            if (joy & 0x100) k |= FLAG_START;      /* Start = Pause */
+            if (joy & 0x080) k |= FLAG_ATTACK2;    /* Y = Attack2 */
+            if (joy & 0x100) k |= FLAG_START;      /* Start */
         }
 #else
         /* Original SDL keyboard input */

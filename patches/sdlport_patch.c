@@ -109,9 +109,25 @@ int main(int argc, char *argv[])
             }
         }
 
-        /* If no OSD PAK, fall through to Menu() which shows the PAK browser */
+        /* If no OSD PAK, check for restart file from Reset Pak */
         if (strcmp(packfile, "/tmp/openbor_osd.pak") != 0) {
-            Menu();
+            FILE *rf = fopen("/tmp/openbor_restart.pak", "r");
+            if (rf) {
+                char restart_pak[128] = {0};
+                if (fgets(restart_pak, sizeof(restart_pak), rf)) {
+                    char *nl = strchr(restart_pak, '\n');
+                    if (nl) *nl = 0;
+                    if (strlen(restart_pak) > 0) {
+                        strncpy(packfile, restart_pak, sizeof(packfile) - 1);
+                        fprintf(stderr, "MiSTer: Restarting PAK: %s\n", packfile);
+                    }
+                }
+                fclose(rf);
+                remove("/tmp/openbor_restart.pak");
+            } else {
+                /* No OSD PAK, no restart — show PAK browser */
+                Menu();
+            }
         }
     }
 #else

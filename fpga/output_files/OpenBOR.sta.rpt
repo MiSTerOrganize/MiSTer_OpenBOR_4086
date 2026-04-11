@@ -1,5 +1,5 @@
 TimeQuest Timing Analyzer report for OpenBOR
-Fri Apr 10 13:54:14 2026
+Sat Apr 11 13:02:13 2026
 Quartus Prime Version 17.0.0 Build 595 04/25/2017 SJ Lite Edition
 
 
@@ -80,16 +80,18 @@ agreement for further details.
 ; Number detected on machine ; 8           ;
 ; Maximum allowed            ; 8           ;
 ;                            ;             ;
-; Average used               ; 1.30        ;
-; Maximum used               ; 6           ;
+; Average used               ; 1.25        ;
+; Maximum used               ; 8           ;
 ;                            ;             ;
 ; Usage by Processor         ; % Time Used ;
 ;     Processor 1            ; 100.0%      ;
-;     Processor 2            ;  11.0%      ;
-;     Processor 3            ;  10.0%      ;
-;     Processor 4            ;   8.7%      ;
-;     Processor 5            ;   0.0%      ;
+;     Processor 2            ;   9.1%      ;
+;     Processor 3            ;   8.3%      ;
+;     Processor 4            ;   7.7%      ;
+;     Processor 5            ;   0.1%      ;
 ;     Processor 6            ;   0.0%      ;
+;     Processor 7            ;   0.0%      ;
+;     Processor 8            ;   0.0%      ;
 +----------------------------+-------------+
 
 
@@ -98,7 +100,7 @@ agreement for further details.
 +-----------------+--------+--------------------------+
 ; SDC File Path   ; Status ; Read at                  ;
 +-----------------+--------+--------------------------+
-; sys/sys_top.sdc ; OK     ; Fri Apr 10 13:54:12 2026 ;
+; sys/sys_top.sdc ; OK     ; Sat Apr 11 13:02:11 2026 ;
 +-----------------+--------+--------------------------+
 
 
@@ -128,14 +130,14 @@ agreement for further details.
 +------------+-----------------+-----------------------------------------------------------------------------------+------+
 ; Fmax       ; Restricted Fmax ; Clock Name                                                                        ; Note ;
 +------------+-----------------+-----------------------------------------------------------------------------------+------+
-; 40.05 MHz  ; 40.05 MHz       ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ;      ;
-; 79.38 MHz  ; 79.38 MHz       ; FPGA_CLK1_50                                                                      ;      ;
-; 96.67 MHz  ; 96.67 MHz       ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ;      ;
-; 114.32 MHz ; 114.32 MHz      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ;      ;
-; 120.66 MHz ; 120.66 MHz      ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ;      ;
-; 138.89 MHz ; 138.89 MHz      ; FPGA_CLK2_50                                                                      ;      ;
-; 146.26 MHz ; 146.26 MHz      ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ;      ;
-; 269.69 MHz ; 269.69 MHz      ; spi_sck                                                                           ;      ;
+; 39.78 MHz  ; 39.78 MHz       ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ;      ;
+; 82.87 MHz  ; 82.87 MHz       ; FPGA_CLK1_50                                                                      ;      ;
+; 94.49 MHz  ; 94.49 MHz       ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ;      ;
+; 118.3 MHz  ; 118.3 MHz       ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ;      ;
+; 123.99 MHz ; 123.99 MHz      ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ;      ;
+; 134.05 MHz ; 134.05 MHz      ; FPGA_CLK2_50                                                                      ;      ;
+; 149.75 MHz ; 149.75 MHz      ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ;      ;
+; 267.88 MHz ; 267.88 MHz      ; spi_sck                                                                           ;      ;
 +------------+-----------------+-----------------------------------------------------------------------------------+------+
 This panel reports FMAX for every clock in the design, regardless of the user-specified clock periods.  FMAX is only computed for paths where the source and destination registers or ports are driven by the same clock.  Paths of different clocks, including generated clocks, are ignored.  For paths between a clock and its inversion, FMAX is computed as if the rising and falling edges are scaled along with FMAX, such that the duty cycle (in terms of a percentage) is maintained. Altera recommends that you always use clock constraints and other slack reports for sign-off analysis.
 
@@ -151,14 +153,14 @@ HTML report is unavailable in plain text report export.
 +-----------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                             ; Slack  ; End Point TNS ;
 +-----------------------------------------------------------------------------------+--------+---------------+
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; -2.297 ; -175.754      ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; -1.630 ; -30.478       ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; -0.105 ; -0.209        ;
-; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 1.712  ; 0.000         ;
-; spi_sck                                                                           ; 6.292  ; 0.000         ;
-; FPGA_CLK1_50                                                                      ; 7.402  ; 0.000         ;
-; FPGA_CLK2_50                                                                      ; 12.800 ; 0.000         ;
-; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; 15.713 ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; -2.131 ; -167.068      ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; -1.713 ; -30.625       ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 0.054  ; 0.000         ;
+; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 1.935  ; 0.000         ;
+; spi_sck                                                                           ; 6.267  ; 0.000         ;
+; FPGA_CLK1_50                                                                      ; 7.933  ; 0.000         ;
+; FPGA_CLK2_50                                                                      ; 12.540 ; 0.000         ;
+; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; 15.546 ; 0.000         ;
 +-----------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -167,14 +169,14 @@ HTML report is unavailable in plain text report export.
 +-----------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                             ; Slack  ; End Point TNS ;
 +-----------------------------------------------------------------------------------+--------+---------------+
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; -0.208 ; -0.208        ;
-; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; 0.252  ; 0.000         ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 0.258  ; 0.000         ;
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 0.261  ; 0.000         ;
-; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 0.351  ; 0.000         ;
-; spi_sck                                                                           ; 0.355  ; 0.000         ;
-; FPGA_CLK1_50                                                                      ; 0.356  ; 0.000         ;
-; FPGA_CLK2_50                                                                      ; 0.424  ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; -0.209 ; -0.209        ;
+; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; 0.256  ; 0.000         ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 0.261  ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 0.263  ; 0.000         ;
+; spi_sck                                                                           ; 0.319  ; 0.000         ;
+; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 0.345  ; 0.000         ;
+; FPGA_CLK2_50                                                                      ; 0.399  ; 0.000         ;
+; FPGA_CLK1_50                                                                      ; 0.423  ; 0.000         ;
 +-----------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -183,11 +185,11 @@ HTML report is unavailable in plain text report export.
 +-----------------------------------------------------------------------------------+--------+---------------+
 ; Clock                                                                             ; Slack  ; End Point TNS ;
 +-----------------------------------------------------------------------------------+--------+---------------+
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; -2.470 ; -77.364       ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 3.389  ; 0.000         ;
-; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 6.218  ; 0.000         ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 7.115  ; 0.000         ;
-; FPGA_CLK1_50                                                                      ; 16.304 ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; -2.448 ; -85.211       ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 3.054  ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 6.247  ; 0.000         ;
+; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 6.391  ; 0.000         ;
+; FPGA_CLK1_50                                                                      ; 15.673 ; 0.000         ;
 +-----------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -196,11 +198,11 @@ HTML report is unavailable in plain text report export.
 +-----------------------------------------------------------------------------------+-------+---------------+
 ; Clock                                                                             ; Slack ; End Point TNS ;
 +-----------------------------------------------------------------------------------+-------+---------------+
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 0.683 ; 0.000         ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 1.260 ; 0.000         ;
-; FPGA_CLK1_50                                                                      ; 1.308 ; 0.000         ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 1.498 ; 0.000         ;
-; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 1.891 ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 0.737 ; 0.000         ;
+; FPGA_CLK1_50                                                                      ; 1.148 ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 1.307 ; 0.000         ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 1.409 ; 0.000         ;
+; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 1.924 ; 0.000         ;
 +-----------------------------------------------------------------------------------+-------+---------------+
 
 
@@ -212,15 +214,15 @@ HTML report is unavailable in plain text report export.
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]             ; 1.000  ; 0.000         ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|fpll_0|fpll|vcoph[0]             ; 1.122  ; 0.000         ;
 ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0]     ; 1.196  ; 0.000         ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 1.938  ; 0.000         ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 3.570  ; 0.000         ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 1.942  ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 3.571  ; 0.000         ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 3.608  ; 0.000         ;
-; spi_sck                                                                           ; 4.273  ; 0.000         ;
-; FPGA_CLK1_50                                                                      ; 9.211  ; 0.000         ;
-; FPGA_CLK2_50                                                                      ; 9.223  ; 0.000         ;
+; spi_sck                                                                           ; 4.274  ; 0.000         ;
+; FPGA_CLK2_50                                                                      ; 9.215  ; 0.000         ;
+; FPGA_CLK1_50                                                                      ; 9.216  ; 0.000         ;
 ; FPGA_CLK3_50                                                                      ; 9.731  ; 0.000         ;
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 14.594 ; 0.000         ;
-; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; 18.911 ; 0.000         ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 14.606 ; 0.000         ;
+; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; 18.903 ; 0.000         ;
 +-----------------------------------------------------------------------------------+--------+---------------+
 
 
@@ -233,7 +235,7 @@ Typical MTBF of Design is 1e+09 years or 3.15e+16 seconds.
 Number of Synchronizer Chains Found: 409
 Shortest Synchronizer Chain: 2 Registers
 Fraction of Chains for which MTBFs Could Not be Calculated: 0.951
-Worst Case Available Settling Time: 3.697 ns
+Worst Case Available Settling Time: 4.163 ns
 
 Worst-Case MTBF values are calculated based on the worst-case silicon characteristics, with worst-case operating conditions.
   - Under worst-case conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 7.8
@@ -577,25 +579,25 @@ Typical MTBF values are calculated based on the nominal silicon characteristics,
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------+----------+----------+----------+
 ; From Clock                                                                        ; To Clock                                                                          ; RR Paths     ; FR Paths ; RF Paths ; FF Paths ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------+----------+----------+----------+
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 58428        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 57642        ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 152          ; 0        ; 0        ; 0        ;
 ; FPGA_CLK1_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 21205        ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 170210       ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 21243        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 172244       ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
-; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 2728432      ; 0        ; 0        ; 0        ;
+; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 2484136      ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; FPGA_CLK2_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
-; FPGA_CLK2_50                                                                      ; FPGA_CLK2_50                                                                      ; 17733        ; 0        ; 0        ; 0        ;
+; FPGA_CLK2_50                                                                      ; FPGA_CLK2_50                                                                      ; 17925        ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; FPGA_CLK2_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path   ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path   ; 0        ; 0        ; 0        ;
@@ -605,15 +607,15 @@ Typical MTBF values are calculated based on the nominal silicon characteristics,
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path   ; 0        ; 0        ; 0        ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 181183       ; 0        ; 0        ; 0        ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 182046       ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path   ; 0        ; 0        ; 0        ;
-; spi_sck                                                                           ; spi_sck                                                                           ; 1011         ; 0        ; 0        ; 0        ;
+; spi_sck                                                                           ; spi_sck                                                                           ; 1021         ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
-; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 9915         ; 0        ; 0        ; 0        ;
+; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 10101        ; 0        ; 0        ; 0        ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------+----------+----------+----------+
 Entries labeled "false path" only account for clock-to-clock false paths and not path-based false paths. As a result, actual path counts may be lower than reported.
 
@@ -623,25 +625,25 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------+----------+----------+----------+
 ; From Clock                                                                        ; To Clock                                                                          ; RR Paths     ; FR Paths ; RF Paths ; FF Paths ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------+----------+----------+----------+
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 58428        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 57642        ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 152          ; 0        ; 0        ; 0        ;
 ; FPGA_CLK1_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 21205        ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 170210       ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 21243        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 172244       ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
-; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 2728432      ; 0        ; 0        ; 0        ;
+; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 2484136      ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; FPGA_CLK1_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; FPGA_CLK2_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
-; FPGA_CLK2_50                                                                      ; FPGA_CLK2_50                                                                      ; 17733        ; 0        ; 0        ; 0        ;
+; FPGA_CLK2_50                                                                      ; FPGA_CLK2_50                                                                      ; 17925        ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; FPGA_CLK2_50                                                                      ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path   ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path   ; 0        ; 0        ; 0        ;
@@ -651,15 +653,15 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path   ; 0        ; 0        ; 0        ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 181183       ; 0        ; 0        ; 0        ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 182046       ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path   ; 0        ; 0        ; 0        ;
-; spi_sck                                                                           ; spi_sck                                                                           ; 1011         ; 0        ; 0        ; 0        ;
+; spi_sck                                                                           ; spi_sck                                                                           ; 1021         ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
 ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path   ; 0        ; 0        ; 0        ;
-; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 9915         ; 0        ; 0        ; 0        ;
+; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 10101        ; 0        ; 0        ; 0        ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+--------------+----------+----------+----------+
 Entries labeled "false path" only account for clock-to-clock false paths and not path-based false paths. As a result, actual path counts may be lower than reported.
 
@@ -669,20 +671,20 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+------------+----------+----------+----------+
 ; From Clock                                                                        ; To Clock                                                                          ; RR Paths   ; FR Paths ; RF Paths ; FF Paths ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+------------+----------+----------+----------+
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 204        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 192        ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 176        ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 1          ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 172        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 2          ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
-; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 10         ; 0        ; 0        ; 0        ;
+; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 11         ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; FPGA_CLK1_50                                                                      ; false path ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path ; 0        ; 0        ; 0        ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 14         ; 0        ; 0        ; 0        ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 13         ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 8          ; 0        ; 0        ; 0        ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+------------+----------+----------+----------+
@@ -694,20 +696,20 @@ Entries labeled "false path" only account for clock-to-clock false paths and not
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+------------+----------+----------+----------+
 ; From Clock                                                                        ; To Clock                                                                          ; RR Paths   ; FR Paths ; RF Paths ; FF Paths ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+------------+----------+----------+----------+
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 204        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; 192        ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 176        ; 0        ; 0        ; 0        ;
-; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 1          ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 172        ; 0        ; 0        ; 0        ;
+; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; 2          ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk           ; false path ; 0        ; 0        ; 0        ;
-; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 10         ; 0        ; 0        ; 0        ;
+; FPGA_CLK1_50                                                                      ; FPGA_CLK1_50                                                                      ; 11         ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; FPGA_CLK1_50                                                                      ; false path ; 0        ; 0        ; 0        ;
 ; emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk           ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk   ; false path ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; false path ; 0        ; 0        ; 0        ;
-; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 14         ; 0        ; 0        ; 0        ;
+; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk ; 13         ; 0        ; 0        ; 0        ;
 ; FPGA_CLK2_50                                                                      ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; false path ; 0        ; 0        ; 0        ;
 ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk                                ; 8          ; 0        ; 0        ; 0        ;
 +-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------+------------+----------+----------+----------+
@@ -1025,7 +1027,7 @@ No non-DPA dedicated SERDES Receiver circuitry present in device or used in desi
 Info: *******************************************************************
 Info: Running Quartus Prime TimeQuest Timing Analyzer
     Info: Version 17.0.0 Build 595 04/25/2017 SJ Lite Edition
-    Info: Processing started: Fri Apr 10 13:54:09 2026
+    Info: Processing started: Sat Apr 11 13:02:08 2026
 Info: Command: quartus_sta OpenBOR -c OpenBOR
 Info: qsta_default_script.tcl version: #1
 Info (20030): Parallel compilation is enabled and will use 8 of the 8 processors detected
@@ -1078,59 +1080,59 @@ Info (332123): Deriving Clock Uncertainty. Please refer to report_sdc in TimeQue
 Info: Found TIMEQUEST_REPORT_SCRIPT_INCLUDE_DEFAULT_ANALYSIS = ON
 Critical Warning (332148): Timing requirements not met
     Info (11105): For recommendations on closing timing, run Report Timing Closure Recommendations in the TimeQuest Timing Analyzer.
-Info (332146): Worst-case setup slack is -2.297
+Info (332146): Worst-case setup slack is -2.131
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -2.297            -175.754 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    -1.630             -30.478 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    -0.105              -0.209 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
-    Info (332119):     1.712               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
-    Info (332119):     6.292               0.000 spi_sck 
-    Info (332119):     7.402               0.000 FPGA_CLK1_50 
-    Info (332119):    12.800               0.000 FPGA_CLK2_50 
-    Info (332119):    15.713               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-Info (332146): Worst-case hold slack is -0.208
+    Info (332119):    -2.131            -167.068 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    -1.713             -30.625 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.054               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
+    Info (332119):     1.935               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
+    Info (332119):     6.267               0.000 spi_sck 
+    Info (332119):     7.933               0.000 FPGA_CLK1_50 
+    Info (332119):    12.540               0.000 FPGA_CLK2_50 
+    Info (332119):    15.546               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+Info (332146): Worst-case hold slack is -0.209
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -0.208              -0.208 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.252               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.258               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
-    Info (332119):     0.261               0.000 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     0.351               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
-    Info (332119):     0.355               0.000 spi_sck 
-    Info (332119):     0.356               0.000 FPGA_CLK1_50 
-    Info (332119):     0.424               0.000 FPGA_CLK2_50 
-Info (332146): Worst-case recovery slack is -2.470
+    Info (332119):    -0.209              -0.209 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.256               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.261               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
+    Info (332119):     0.263               0.000 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     0.319               0.000 spi_sck 
+    Info (332119):     0.345               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
+    Info (332119):     0.399               0.000 FPGA_CLK2_50 
+    Info (332119):     0.423               0.000 FPGA_CLK1_50 
+Info (332146): Worst-case recovery slack is -2.448
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):    -2.470             -77.364 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     3.389               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
-    Info (332119):     6.218               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
-    Info (332119):     7.115               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    16.304               0.000 FPGA_CLK1_50 
-Info (332146): Worst-case removal slack is 0.683
+    Info (332119):    -2.448             -85.211 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     3.054               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
+    Info (332119):     6.247               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     6.391               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
+    Info (332119):    15.673               0.000 FPGA_CLK1_50 
+Info (332146): Worst-case removal slack is 0.737
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
-    Info (332119):     0.683               0.000 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.260               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
-    Info (332119):     1.308               0.000 FPGA_CLK1_50 
-    Info (332119):     1.498               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):     1.891               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
+    Info (332119):     0.737               0.000 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.148               0.000 FPGA_CLK1_50 
+    Info (332119):     1.307               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.409               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
+    Info (332119):     1.924               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
 Info (332146): Worst-case minimum pulse width slack is 1.000
     Info (332119):     Slack       End Point TNS Clock 
     Info (332119): ========= =================== =====================
     Info (332119):     1.000               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
     Info (332119):     1.122               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|fpll_0|fpll|vcoph[0] 
     Info (332119):     1.196               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] 
-    Info (332119):     1.938               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
-    Info (332119):     3.570               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):     1.942               0.000 pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk 
+    Info (332119):     3.571               0.000 emu|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
     Info (332119):     3.608               0.000 sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk 
-    Info (332119):     4.273               0.000 spi_sck 
-    Info (332119):     9.211               0.000 FPGA_CLK1_50 
-    Info (332119):     9.223               0.000 FPGA_CLK2_50 
+    Info (332119):     4.274               0.000 spi_sck 
+    Info (332119):     9.215               0.000 FPGA_CLK2_50 
+    Info (332119):     9.216               0.000 FPGA_CLK1_50 
     Info (332119):     9.731               0.000 FPGA_CLK3_50 
-    Info (332119):    14.594               0.000 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
-    Info (332119):    18.911               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    14.606               0.000 emu|pll|pll_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk 
+    Info (332119):    18.903               0.000 pll_audio|pll_audio_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk 
 Info (332114): Report Metastability: Found 409 synchronizer chains.
     Info (332114): Worst-Case MTBF of Design is 1e+09 years or 3.15e+16 seconds.
     Info (332114): Typical MTBF of Design is 1e+09 years or 3.15e+16 seconds.
@@ -1138,7 +1140,7 @@ Info (332114): Report Metastability: Found 409 synchronizer chains.
     Info (332114): Number of Synchronizer Chains Found: 409
     Info (332114): Shortest Synchronizer Chain: 2 Registers
     Info (332114): Fraction of Chains for which MTBFs Could Not be Calculated: 0.951
-    Info (332114): Worst Case Available Settling Time: 3.697 ns
+    Info (332114): Worst Case Available Settling Time: 4.163 ns
     Info (332114): 
     Info (332114): Worst-Case MTBF values are calculated based on the worst-case silicon characteristics, with worst-case operating conditions.
     Info (332114):   - Under worst-case conditions, an increase of 100ps in available settling time will increase MTBF values by a factor of 7.8
@@ -1147,8 +1149,8 @@ Info (332114): Report Metastability: Found 409 synchronizer chains.
 Info (332102): Design is not fully constrained for setup requirements
 Info (332102): Design is not fully constrained for hold requirements
 Info: Quartus Prime TimeQuest Timing Analyzer was successful. 0 errors, 5 warnings
-    Info: Peak virtual memory: 5207 megabytes
-    Info: Processing ended: Fri Apr 10 13:54:14 2026
+    Info: Peak virtual memory: 5208 megabytes
+    Info: Processing ended: Sat Apr 11 13:02:13 2026
     Info: Elapsed time: 00:00:05
     Info: Total CPU time (on all processors): 00:00:05
 

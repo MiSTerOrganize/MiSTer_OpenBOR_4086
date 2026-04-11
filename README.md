@@ -54,16 +54,16 @@ Build 3979 runs the vast majority of OpenBOR mods, including Streets of Rage Rem
 
 ## Controls
 
-| Xbox Controller | Action                  |
+| Button          | Action                  |
 |-----------------|-------------------------|
-| A               | Jump / confirm in menus |
-| B               | Punch                   |
-| X               | Special / back in menus |
-| Y               | Block                   |
+| A               | Attack / confirm        |
+| B               | Jump                    |
+| X               | Special / back          |
+| Y               | Attack2                 |
 | D-pad / Analog  | Move                    |
 | Start           | Pause / add player      |
 | Select          | Quit                    |
-| Xbox button     | MiSTer OSD menu         |
+| Menu button     | MiSTer OSD menu         |
 
 All 4 players use the same button layout. Remap buttons from the MiSTer OSD (press F12 on keyboard, or the OSD button on your IO board).
 
@@ -73,10 +73,10 @@ Press START during gameplay:
 
 - **Continue** — resume gameplay
 - **Options** — adjust Music Volume and SFX Volume with D-pad left/right, select Back to return
-- **Reset Pak** — restart the PAK from its title screen
+- **Reset Pak** — restart the current PAK fresh
 - **Quit** — exit to PAK browser
 
-Navigate with D-pad up/down. Press A to choose, X to go back.
+Navigate with D-pad up/down. Press Attack to choose, Special to go back.
 
 ## FPGA Technical Details
 

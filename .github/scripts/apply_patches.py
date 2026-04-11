@@ -153,7 +153,7 @@ endif
 
     new_flip = """#ifdef MISTER_NATIVE_VIDEO
 \tNativeVideoWriter_WriteFrame(screen->pixels, screen->w, screen->h,
-\t\tscreen->format->BitsPerPixel,
+\t\tscreen->pitch, screen->format->BitsPerPixel,
 \t\tscreen->format->palette ? screen->format->palette->colors : NULL);
 #elif SDL2
 \tSDL_BlitSurface(screen, NULL, SDL_GetWindowSurface(window), NULL);

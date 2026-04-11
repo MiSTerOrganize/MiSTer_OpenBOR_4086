@@ -225,7 +225,7 @@ localparam CONF_STR = {
 	"OpenBOR;;",
 	"F0,PAK,Load PAK;",
 	"-;",
-	"J1,Jump,Punch,Special,Block,Start,Select;",
+	"J1,Attack,Jump,Special,Attack2,Start,Quit;",
 	"jn,A,B,X,Y,Start,Select;",
 	"-;",
 	"V,v",`BUILD_DATE 

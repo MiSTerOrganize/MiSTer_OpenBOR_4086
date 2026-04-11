@@ -12,11 +12,11 @@
  *   Reset Pak  — restarts the PAK from its title screen
  *   Quit       — exits OpenBOR (daemon relaunches, user lands at PAK browser)
  *
- * CONTROLS (matches user spec for Xbox Series X controller):
+ * CONTROLS:
  *   D-pad Up/Down  — navigate menu entries
- *   A Button (FLAG_JUMP)    — confirm / select entry
+ *   A Button (FLAG_ATTACK)    — confirm / select entry
  *   X Button (FLAG_SPECIAL) — back (closes menu from main, or back to main from Options)
- *   Start Button (FLAG_START) — also confirms (matches PICO-8 convention)
+ *   Start Button (FLAG_START) — also confirms
  *   D-pad Left/Right — adjust Music/SFX volume in Options submenu
  *
  * RESET PAK IMPLEMENTATION:
@@ -121,8 +121,8 @@ void pausemenu()
                 sound_play_sample(SAMPLE_BEEP, 0, savedata.effectvol, savedata.effectvol, 100);
             }
 
-            /* A button (Jump) or Start — confirm selection */
-            if(newkeys & (FLAG_JUMP | FLAG_START))
+            /* A button (Attack) or Start — confirm selection */
+            if(newkeys & (FLAG_ATTACK | FLAG_START))
             {
                 sound_play_sample(SAMPLE_BEEP2, 0, savedata.effectvol, savedata.effectvol, 100);
                 switch(pauselector)
@@ -138,16 +138,17 @@ void pausemenu()
                     option_selector = 0;
                     break;
 
-                case 2:  /* Reset Pak — restart PAK from its title screen */
-                    /* Setting endgame = 2 exits playgame() back to openborMain()
-                     * which redraws the PAK's main menu. This is the same
-                     * mechanism stock End Game uses, but without killing the
-                     * player lives first, so no game-over sequence plays.
-                     * Equivalent to PICO-8's Reset Cart. */
-                    endgame = 2;
-                    quit = 1;
-                    sound_pause_music(0);
-                    sound_pause_sample(0);
+                case 2:  /* Reset Pak — restart same PAK fresh */
+                    /* Save current PAK name so the relaunch auto-loads it
+                     * instead of showing the PAK browser. */
+                    {
+                        FILE *rf = fopen("/tmp/openbor_restart.pak", "w");
+                        if (rf) {
+                            fprintf(rf, "%s", packfile);
+                            fclose(rf);
+                        }
+                    }
+                    exit(0);
                     break;
 
                 case 3:  /* Quit — exit OpenBOR, daemon relaunches to PAK browser */
@@ -213,7 +214,7 @@ void pausemenu()
             }
 
             /* A button or Start — confirm (only Back does anything) */
-            if(newkeys & (FLAG_JUMP | FLAG_START))
+            if(newkeys & (FLAG_ATTACK | FLAG_START))
             {
                 if(option_selector == 2)  /* Back */
                 {

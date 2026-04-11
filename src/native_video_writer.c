@@ -51,6 +51,7 @@ static int mem_fd = -1;
 static volatile uint8_t* ddr_base = NULL;
 static uint32_t frame_counter = 0;
 static int active_buf = 0;
+static int first_frame = 1;
 
 bool NativeVideoWriter_Init(void) {
     mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -78,6 +79,7 @@ bool NativeVideoWriter_Init(void) {
     *cart_ctrl = 0;
     frame_counter = 0;
     active_buf = 0;
+    first_frame = 1;
 
     fprintf(stderr, "NativeVideoWriter: mapped 0x%08X, %dx%d @ %d bytes/frame\n",
             NV_DDR_PHYS_BASE, NV_FRAME_WIDTH, NV_FRAME_HEIGHT, NV_FRAME_BYTES);
@@ -98,8 +100,15 @@ void NativeVideoWriter_Shutdown(void) {
 }
 
 void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
-                                  int bpp, const void* palette) {
-    if (!ddr_base) return;
+                                  int pitch, int bpp, const void* palette) {
+    if (!ddr_base || !pixels) return;
+
+    /* Debug: log first frame's format info */
+    if (first_frame) {
+        fprintf(stderr, "NativeVideoWriter: first frame %dx%d pitch=%d bpp=%d\n",
+                width, height, pitch, bpp);
+        first_frame = 0;
+    }
 
     /* Clamp to frame dimensions */
     if (width > NV_FRAME_WIDTH) width = NV_FRAME_WIDTH;
@@ -108,25 +117,25 @@ void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
 
     uint32_t buf_offset = (active_buf == 0) ? NV_BUF0_OFFSET : NV_BUF1_OFFSET;
     volatile uint16_t* dst = (volatile uint16_t*)(ddr_base + buf_offset);
+    int src_bpp_bytes = bpp / 8;
 
     if (bpp == 16) {
-        /* RGB565 — direct copy, most common OpenBOR mode.
-         * Source pitch may differ from width*2 if SDL adds padding,
-         * but for 320-wide surfaces it's typically exact. */
-        const uint16_t* src16 = (const uint16_t*)pixels;
-        int dst_stride = NV_FRAME_WIDTH;
+        /* RGB565 — row-by-row copy using source pitch */
+        const uint8_t* src = (const uint8_t*)pixels;
         for (int y = 0; y < height; y++) {
-            memcpy((void*)(dst + y * dst_stride), src16 + y * width, width * 2);
+            memcpy((void*)(dst + y * NV_FRAME_WIDTH),
+                   src + y * pitch,
+                   width * 2);
         }
     }
     else if (bpp == 8 && palette) {
-        /* 8bpp paletted — convert through palette to RGB565.
-         * Palette entries are SDL_Color: {r, g, b, unused} = 4 bytes each. */
-        const uint8_t* src8 = (const uint8_t*)pixels;
+        /* 8bpp paletted — convert through palette to RGB565 */
+        const uint8_t* src = (const uint8_t*)pixels;
         const uint8_t* pal = (const uint8_t*)palette;
         for (int y = 0; y < height; y++) {
+            const uint8_t* row = src + y * pitch;
             for (int x = 0; x < width; x++) {
-                uint8_t idx = src8[y * width + x];
+                uint8_t idx = row[x];
                 uint8_t r = pal[idx * 4 + 0];
                 uint8_t g = pal[idx * 4 + 1];
                 uint8_t b = pal[idx * 4 + 2];
@@ -136,15 +145,15 @@ void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
         }
     }
     else if (bpp == 32) {
-        /* 32bpp RGBA/BGRA — convert to RGB565.
-         * OpenBOR uses BGRA ordering on little-endian ARM. */
-        const uint8_t* src32 = (const uint8_t*)pixels;
+        /* 32bpp RGBA/BGRA — convert to RGB565 */
+        const uint8_t* src = (const uint8_t*)pixels;
         for (int y = 0; y < height; y++) {
+            const uint8_t* row = src + y * pitch;
             for (int x = 0; x < width; x++) {
-                int i = (y * width + x) * 4;
-                uint8_t b = src32[i + 0];
-                uint8_t g = src32[i + 1];
-                uint8_t r = src32[i + 2];
+                int i = x * 4;
+                uint8_t b = row[i + 0];
+                uint8_t g = row[i + 1];
+                uint8_t r = row[i + 2];
                 dst[y * NV_FRAME_WIDTH + x] =
                     (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
             }
