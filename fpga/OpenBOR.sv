@@ -474,8 +474,12 @@ end
 reg [15:0] mt32_i2s_r, mt32_i2s_l;
 wire midi_rx;
 
-assign AUDIO_L = mt32_i2s_l;
-assign AUDIO_R = mt32_i2s_r;
+// Native audio: DDR3 ring buffer populated by ARM via /dev/mem,
+// drained by openbor_video_reader at 48 kHz. MT32pi I2S capture is
+// preserved below for future MIDI support but no longer wired to
+// AUDIO_L/R -- the FPGA now owns the audio path.
+assign AUDIO_L = nv_audio_l;
+assign AUDIO_R = nv_audio_r;
 assign AUDIO_S = 1;
 
 assign USER_OUT[0]   = 1;
@@ -643,6 +647,7 @@ wire [7:0] comp_v = (cos_g >= rnd_c) ? {cos_g - rnd_c, 2'b00} : 8'd0;
 wire [7:0] nv_r, nv_g, nv_b;
 wire       nv_hs, nv_vs, nv_de;
 wire       nv_active;
+wire [15:0] nv_audio_l, nv_audio_r;
 
 openbor_video_top native_video
 (
@@ -687,7 +692,12 @@ openbor_video_top native_video
 	.ioctl_wr       (ioctl_wr),
 	.ioctl_addr     (ioctl_addr),
 	.ioctl_dout     (ioctl_dout),
-	.ioctl_wait     (nv_ioctl_wait)
+	.ioctl_wait     (nv_ioctl_wait),
+
+	// Native audio (DDR3 ring buffer -> AUDIO_L/R)
+	.clk_audio      (CLK_AUDIO),
+	.audio_l        (nv_audio_l),
+	.audio_r        (nv_audio_r)
 );
 
 // Mux VGA outputs: native video path vs. existing menu pattern

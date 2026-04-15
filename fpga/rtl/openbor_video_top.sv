@@ -61,7 +61,12 @@ module openbor_video_top (
     input  wire        ioctl_wr,
     input  wire [26:0] ioctl_addr,
     input  wire  [7:0] ioctl_dout,
-    output wire        ioctl_wait
+    output wire        ioctl_wait,
+
+    // Audio output (clk_audio domain)
+    input  wire        clk_audio,
+    output wire [15:0] audio_l,
+    output wire [15:0] audio_r
 );
 
 // -- Timing Generator --------------------------------------------------
@@ -131,7 +136,11 @@ openbor_video_reader reader (
     .ioctl_wr       (ioctl_wr),
     .ioctl_addr     (ioctl_addr),
     .ioctl_dout     (ioctl_dout),
-    .ioctl_wait     (ioctl_wait)
+    .ioctl_wait     (ioctl_wait),
+
+    .clk_audio      (clk_audio),
+    .audio_l        (audio_l),
+    .audio_r        (audio_r)
 );
 
 // -- Output assignments ------------------------------------------------

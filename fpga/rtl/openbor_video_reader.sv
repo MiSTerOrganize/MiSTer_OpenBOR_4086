@@ -17,9 +17,15 @@
 //    0x3A000000 + 0x000     : Control word (frame_counter[31:2], active_buffer[1:0])
 //    0x3A000000 + 0x008     : Joystick data (FPGA writes, ARM reads)
 //    0x3A000000 + 0x010     : Cart control (file_size, ARM polls)
+//    0x3A000000 + 0x018     : Joystick P2
+//    0x3A000000 + 0x020     : Joystick P3
+//    0x3A000000 + 0x028     : Joystick P4
+//    0x3A000000 + 0x030     : Audio ring write pointer (ARM writes)
+//    0x3A000000 + 0x038     : Audio ring read pointer  (FPGA writes)
 //    0x3A000000 + 0x040     : Buffer 0 (320x240 RGB565 = 153,600 bytes; 256KB region)
 //    0x3A040040             : Buffer 1 (320x240 RGB565; 256KB region)
 //    0x3A080000             : Cart data buffer (past video buffers)
+//    0x3A0D0000             : Audio ring buffer (64 KiB, 16,384 stereo S16 frames)
 //
 //  Bandwidth: 153,600 bytes x 60fps = 9.2 MB/s (DDR3 can do >1000)
 //
@@ -73,6 +79,11 @@ module openbor_video_reader (
     output reg   [7:0] g_out,
     output reg   [7:0] b_out,
 
+    // Audio output (clk_audio domain)
+    input  wire        clk_audio,       // 24.576 MHz
+    output reg  [15:0] audio_l,
+    output reg  [15:0] audio_r,
+
     // Control
     input  wire        enable,
     output wire        frame_ready
@@ -109,9 +120,18 @@ localparam [28:0] CART_CTRL_ADDR = 29'h07400002;  // 0x3A000010 >> 3
 localparam [28:0] JOY1_ADDR      = 29'h07400003;  // 0x3A000018 >> 3
 localparam [28:0] JOY2_ADDR      = 29'h07400004;  // 0x3A000020 >> 3
 localparam [28:0] JOY3_ADDR      = 29'h07400005;  // 0x3A000028 >> 3
+localparam [28:0] AUDIO_WR_ADDR   = 29'h07400006;  // 0x3A000030 >> 3
+localparam [28:0] AUDIO_RD_ADDR   = 29'h07400007;  // 0x3A000038 >> 3
 localparam [28:0] BUF0_ADDR      = 29'h07400008;  // 0x3A000040 >> 3
 localparam [28:0] BUF1_ADDR      = 29'h07408008;  // 0x3A040040 >> 3
 localparam [28:0] CART_DATA_ADDR = 29'h07410000;  // 0x3A080000 >> 3
+localparam [28:0] AUDIO_RING_ADDR = 29'h0741A000; // 0x3A0D0000 >> 3
+localparam [31:0] AUDIO_RING_BYTES = 32'h00010000; // 64 KiB
+localparam [31:0] AUDIO_RING_MASK  = 32'h0000FFFF;
+
+// Audio refill threshold: trigger a fetch when FIFO has < this qwords used.
+// FIFO is 512 entries deep; 384 leaves 128 qwords (~5.3 ms) headroom.
+localparam [9:0]  AUDIO_REFILL_THRESHOLD = 10'd384;
 
 // 320 pixels × 2 bytes / 8 bytes per qword = 80 beats per scanline
 localparam [7:0]  LINE_BURST   = 8'd80;
@@ -186,22 +206,29 @@ wire frame_ready_vid = frame_ready_sync[1];
 assign frame_ready = frame_ready_vid;
 
 // -- DDR3 Read State Machine ------------------------------------------
-localparam [3:0] ST_IDLE            = 4'd0;
-localparam [3:0] ST_POLL_CTRL       = 4'd1;
-localparam [3:0] ST_WAIT_CTRL       = 4'd2;
-localparam [3:0] ST_CHECK_CTRL      = 4'd3;
-localparam [3:0] ST_READ_LINE       = 4'd4;
-localparam [3:0] ST_WAIT_LINE       = 4'd5;
-localparam [3:0] ST_LINE_DONE       = 4'd6;
-localparam [3:0] ST_WAIT_DISPLAY    = 4'd7;
-localparam [3:0] ST_WRITE_JOY0      = 4'd8;
-localparam [3:0] ST_WRITE_JOY1      = 4'd9;
-localparam [3:0] ST_WRITE_JOY2      = 4'd10;
-localparam [3:0] ST_WRITE_JOY3      = 4'd11;
-localparam [3:0] ST_WRITE_CART      = 4'd12;
-localparam [3:0] ST_WRITE_CART_SIZE = 4'd13;
+localparam [4:0] ST_IDLE            = 5'd0;
+localparam [4:0] ST_POLL_CTRL       = 5'd1;
+localparam [4:0] ST_WAIT_CTRL       = 5'd2;
+localparam [4:0] ST_CHECK_CTRL      = 5'd3;
+localparam [4:0] ST_READ_LINE       = 5'd4;
+localparam [4:0] ST_WAIT_LINE       = 5'd5;
+localparam [4:0] ST_LINE_DONE       = 5'd6;
+localparam [4:0] ST_WAIT_DISPLAY    = 5'd7;
+localparam [4:0] ST_WRITE_JOY0      = 5'd8;
+localparam [4:0] ST_WRITE_JOY1      = 5'd9;
+localparam [4:0] ST_WRITE_JOY2      = 5'd10;
+localparam [4:0] ST_WRITE_JOY3      = 5'd11;
+localparam [4:0] ST_WRITE_CART      = 5'd12;
+localparam [4:0] ST_WRITE_CART_SIZE = 5'd13;
+// Audio-path states -- interleaved into idle windows of the video flow.
+localparam [4:0] ST_POLL_AUDIO_WR   = 5'd14;
+localparam [4:0] ST_WAIT_AUDIO_WR   = 5'd15;
+localparam [4:0] ST_PLAN_AUDIO      = 5'd16;
+localparam [4:0] ST_READ_AUDIO_RING = 5'd17;
+localparam [4:0] ST_WAIT_AUDIO_RING = 5'd18;
+localparam [4:0] ST_WRITE_AUDIO_RD  = 5'd19;
 
-reg  [3:0]  state;
+reg  [4:0]  state;
 reg  [31:0] ctrl_word;
 reg  [29:0] prev_frame_counter;
 reg         active_buffer;
@@ -212,6 +239,13 @@ reg         first_frame_loaded;
 reg  [4:0]  stale_vblank_count;
 reg         preloading;
 reg  [19:0] timeout_cnt;
+
+// Audio state
+reg  [31:0] audio_wr_ptr;
+reg  [31:0] audio_rd_ptr;
+reg  [7:0]  audio_burst_rem;
+reg  [31:0] audio_burst_bytes;
+reg  [19:0] audio_backoff;
 
 // Cart loading registers
 reg  [63:0] cart_buf;
@@ -230,6 +264,24 @@ assign ioctl_wait = cart_write_pending & ioctl_download;
 reg         fifo_wr;
 reg  [63:0] fifo_wr_data;
 wire        fifo_full;
+
+// -- Audio FIFO write signals -----------------------------------------
+reg         audio_fifo_wr;
+reg  [63:0] audio_fifo_wr_data;
+wire        audio_fifo_empty;
+wire [9:0]  audio_fifo_wrusedw;
+wire        audio_fifo_low = (audio_fifo_wrusedw < AUDIO_REFILL_THRESHOLD);
+
+// Audio fetch eligibility (combinational)
+wire [31:0] audio_bytes_avail = (audio_wr_ptr - audio_rd_ptr) & AUDIO_RING_MASK;
+wire        audio_wake        = enable_ddr && audio_fifo_low && (audio_backoff == 20'd0);
+
+// Burst planning (combinational, used in ST_PLAN_AUDIO).
+wire [31:0] audio_plan_cand_a  = (audio_bytes_avail > 32'd256) ? 32'd256 : audio_bytes_avail;
+wire [31:0] audio_plan_wrap    = AUDIO_RING_BYTES - (audio_rd_ptr & AUDIO_RING_MASK);
+wire [31:0] audio_plan_cand_b  = (audio_plan_cand_a > audio_plan_wrap) ? audio_plan_wrap : audio_plan_cand_a;
+wire [31:0] audio_plan_bytes   = audio_plan_cand_b & 32'hFFFFFFF8;
+wire [7:0]  audio_plan_qwords  = audio_plan_bytes[10:3];
 
 // -- FIFO async clear -------------------------------------------------
 reg [3:0] fifo_aclr_cnt;
@@ -270,9 +322,18 @@ always @(posedge ddr_clk) begin
         cart_loading       <= 1'b0;
         new_frame_pending  <= 1'b0;
         synced             <= 1'b0;
+        audio_wr_ptr       <= 32'd0;
+        audio_rd_ptr       <= 32'd0;
+        audio_burst_rem    <= 8'd0;
+        audio_burst_bytes  <= 32'd0;
+        audio_backoff      <= 20'd0;
+        audio_fifo_wr      <= 1'b0;
+        audio_fifo_wr_data <= 64'd0;
     end
     else begin
-        fifo_wr <= 1'b0;
+        fifo_wr       <= 1'b0;
+        audio_fifo_wr <= 1'b0;
+        if (audio_backoff != 20'd0) audio_backoff <= audio_backoff - 20'd1;
         if (fifo_aclr_cnt != 4'd0) fifo_aclr_cnt <= fifo_aclr_cnt - 4'd1;
         if (!ddr_busy) ddr_rd <= 1'b0;
         if (!ddr_busy) ddr_we <= 1'b0;
@@ -340,6 +401,7 @@ always @(posedge ddr_clk) begin
             ST_IDLE: begin
                 // Frame reads always get priority -- video must never be starved.
                 // Cart writes happen between frame reads.
+                // Audio fetches happen last, only when nothing else is pending.
                 // new_frame_pending is latched so it can't be missed.
                 if (enable_ddr && new_frame_pending) begin
                     new_frame_pending <= 1'b0;  // consumed
@@ -349,6 +411,8 @@ always @(posedge ddr_clk) begin
                     state <= ST_WRITE_CART;
                 else if (cart_size_pending)
                     state <= ST_WRITE_CART_SIZE;
+                else if (audio_wake)
+                    state <= ST_POLL_AUDIO_WR;
             end
 
             ST_WRITE_JOY0: begin
@@ -526,6 +590,77 @@ always @(posedge ddr_clk) begin
                     state <= ST_READ_LINE;
             end
 
+            // -- Audio path: poll wr_ptr, read ring, write rd_ptr ---
+            ST_POLL_AUDIO_WR: begin
+                if (!ddr_busy) begin
+                    ddr_addr     <= AUDIO_WR_ADDR;
+                    ddr_burstcnt <= 8'd1;
+                    ddr_rd       <= 1'b1;
+                    state        <= ST_WAIT_AUDIO_WR;
+                end
+            end
+
+            ST_WAIT_AUDIO_WR: begin
+                if (ddr_dout_ready) begin
+                    audio_wr_ptr <= ddr_dout[31:0];
+                    state        <= ST_PLAN_AUDIO;
+                end
+            end
+
+            ST_PLAN_AUDIO: begin
+                // Now audio_bytes_avail is valid (audio_wr_ptr just latched).
+                if (audio_bytes_avail == 32'd0) begin
+                    // Ring empty -- back off briefly to avoid DDR3 spam.
+                    audio_backoff <= 20'h01000;  // ~41 us at 100 MHz clk_sys
+                    state         <= ST_IDLE;
+                end
+                else if (!audio_fifo_low) begin
+                    // FIFO filled up while we were polling; don't fetch.
+                    state <= ST_IDLE;
+                end
+                else if (audio_plan_bytes == 32'd0) begin
+                    state <= ST_IDLE;
+                end
+                else begin
+                    // Plan a burst: min(bytes_avail, 256, ring_wrap_room),
+                    // floored to a multiple of 8 bytes (one qword).
+                    audio_burst_bytes <= audio_plan_bytes;
+                    audio_burst_rem   <= audio_plan_qwords;
+                    state             <= ST_READ_AUDIO_RING;
+                end
+            end
+
+            ST_READ_AUDIO_RING: begin
+                if (!ddr_busy) begin
+                    ddr_addr     <= AUDIO_RING_ADDR + audio_rd_ptr[15:3];
+                    ddr_burstcnt <= audio_burst_rem;
+                    ddr_rd       <= 1'b1;
+                    state        <= ST_WAIT_AUDIO_RING;
+                end
+            end
+
+            ST_WAIT_AUDIO_RING: begin
+                if (ddr_dout_ready) begin
+                    audio_fifo_wr_data <= ddr_dout;
+                    audio_fifo_wr      <= 1'b1;
+                    audio_burst_rem    <= audio_burst_rem - 8'd1;
+                    if (audio_burst_rem == 8'd1) begin
+                        audio_rd_ptr <= (audio_rd_ptr + audio_burst_bytes) & AUDIO_RING_MASK;
+                        state        <= ST_WRITE_AUDIO_RD;
+                    end
+                end
+            end
+
+            ST_WRITE_AUDIO_RD: begin
+                if (!ddr_busy) begin
+                    ddr_addr     <= AUDIO_RD_ADDR;
+                    ddr_din      <= {32'd0, audio_rd_ptr};
+                    ddr_burstcnt <= 8'd1;
+                    ddr_we       <= 1'b1;
+                    state        <= ST_IDLE;
+                end
+            end
+
             default: state <= ST_IDLE;
         endcase
     end
@@ -645,6 +780,97 @@ always @(posedge clk_vid) begin
                 pixel_sub        <= 2'd0;
                 pixel_word_valid <= 1'b0;
             end
+        end
+    end
+end
+
+// -- Audio dual-clock FIFO (ddr_clk write, clk_audio read) -----------
+// 64-bit wide (= 2 stereo frames per entry), 1024 deep. Read side
+// alternates halves, popping every other sample.
+wire [63:0] audio_fifo_rd_data;
+reg         audio_fifo_rd;
+
+dcfifo #(
+    .intended_device_family ("Cyclone V"),
+    .lpm_numwords           (1024),
+    .lpm_showahead          ("ON"),
+    .lpm_type               ("dcfifo"),
+    .lpm_width              (64),
+    .lpm_widthu             (10),
+    .overflow_checking      ("ON"),
+    .rdsync_delaypipe       (4),
+    .underflow_checking     ("ON"),
+    .use_eab                ("ON"),
+    .wrsync_delaypipe       (4)
+) audio_fifo_inst (
+    .aclr     (reset),
+    .data     (audio_fifo_wr_data),
+    .rdclk    (clk_audio),
+    .rdreq    (audio_fifo_rd),
+    .wrclk    (ddr_clk),
+    .wrreq    (audio_fifo_wr),
+    .q        (audio_fifo_rd_data),
+    .rdempty  (audio_fifo_empty),
+    .wrfull   (),
+    .wrusedw  (audio_fifo_wrusedw),
+    .eccstatus(),
+    .rdfull   (),
+    .rdusedw  (),
+    .wrempty  ()
+);
+
+// -- 48 kHz sample clock (clk_audio / 512 = 48 kHz exactly) ----------
+reg [8:0] aud_div;
+reg       aud_tick;
+reg [1:0] reset_aud_sync;
+always @(posedge clk_audio or posedge reset)
+    if (reset) reset_aud_sync <= 2'b11;
+    else       reset_aud_sync <= {reset_aud_sync[0], 1'b0};
+wire reset_aud = reset_aud_sync[1];
+
+always @(posedge clk_audio) begin
+    if (reset_aud) begin
+        aud_div  <= 9'd0;
+        aud_tick <= 1'b0;
+    end
+    else begin
+        aud_div  <= aud_div + 9'd1;
+        aud_tick <= (aud_div == 9'd0);
+    end
+end
+
+// -- Audio sample output (clk_audio domain) --------------------------
+// Each FIFO entry carries two stereo frames:
+//   [15:0]   L0
+//   [31:16]  R0
+//   [47:32]  L1
+//   [63:48]  R1
+// Alternate halves, pop every other tick.
+reg half_sel;
+always @(posedge clk_audio) begin
+    if (reset_aud) begin
+        audio_l       <= 16'd0;
+        audio_r       <= 16'd0;
+        audio_fifo_rd <= 1'b0;
+        half_sel      <= 1'b0;
+    end
+    else begin
+        audio_fifo_rd <= 1'b0;
+        if (aud_tick) begin
+            if (!audio_fifo_empty) begin
+                if (half_sel == 1'b0) begin
+                    audio_l  <= audio_fifo_rd_data[15:0];
+                    audio_r  <= audio_fifo_rd_data[31:16];
+                    half_sel <= 1'b1;
+                end
+                else begin
+                    audio_l       <= audio_fifo_rd_data[47:32];
+                    audio_r       <= audio_fifo_rd_data[63:48];
+                    audio_fifo_rd <= 1'b1;       // advance to next qword
+                    half_sel      <= 1'b0;
+                end
+            end
+            // else: underflow, hold previous sample
         end
     end
 end
