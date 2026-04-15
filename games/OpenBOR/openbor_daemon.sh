@@ -63,12 +63,16 @@ while true; do
             continue
         fi
         if [ "$CUR" != "OpenBOR" ]; then
-            # User left the core — kill binary
+            # User left the core -- kill binary and clear cached state
+            # so the next entry goes through MiSTer's OSD picker instead
+            # of auto-loading the previous PAK.
             kill $CHILD 2>/dev/null
             wait $CHILD 2>/dev/null
             CHILD=""
             FIRST_LOAD=1
             rm -f "$PIDFILE"
+            rm -f /tmp/openbor_current.pak
+            rm -f /media/fat/config/OpenBOR.cfg
         fi
     fi
 
