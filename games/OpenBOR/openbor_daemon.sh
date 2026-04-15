@@ -72,7 +72,14 @@ while true; do
             FIRST_LOAD=1
             rm -f "$PIDFILE"
             rm -f /tmp/openbor_current.pak
-            rm -f /media/fat/config/OpenBOR.cfg
+            # MiSTer tracks per-slot last-file state across several
+            # extensions: .cfg (options), .f0 (last file slot 0), .s0
+            # (last SD mount). Nuke the whole OpenBOR.* family so the
+            # next entry re-opens the OSD picker.
+            rm -f /media/fat/config/OpenBOR.cfg \
+                  /media/fat/config/OpenBOR.f0 \
+                  /media/fat/config/OpenBOR.f1 \
+                  /media/fat/config/OpenBOR.s0
         fi
     fi
 
