@@ -225,8 +225,10 @@ localparam CONF_STR = {
 	"OpenBOR;;",
 	"FC0,PAK,Load PAK;",
 	"-;",
-	"J1,Attack,Jump,Special,Attack2,Start,Screenshot;",
-	"jn,A,B,X,Y,Start,Select;",
+	// Screenshot removed -- FLAG_SCREENSHOT is not wired on this core.
+	// Select intentionally unmapped.
+	"J1,Attack,Jump,Special,Attack2,Start;",
+	"jn,A,B,X,Y,Start;",
 	"-;",
 	"V,v",`BUILD_DATE 
 };
