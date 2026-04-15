@@ -8,74 +8,6 @@
 					"strict" : false
 				},
 				{
-					"name" : "IO_SCL",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_DE",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[9]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[10]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[11]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[12]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[13]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[14]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[15]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[16]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[17]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[18]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[19]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[20]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[21]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[22]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[23]",
-					"strict" : false
-				},
-				{
 					"name" : "HDMI_TX_HS",
 					"strict" : false
 				},
@@ -192,6 +124,10 @@
 					"strict" : false
 				},
 				{
+					"name" : "HDMI_TX_DE",
+					"strict" : false
+				},
+				{
 					"name" : "HDMI_TX_D[0]",
 					"strict" : false
 				},
@@ -225,6 +161,66 @@
 				},
 				{
 					"name" : "HDMI_TX_D[8]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[9]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[10]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[11]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[12]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[13]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[14]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[15]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[16]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[17]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[18]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[19]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[20]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[21]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[22]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[23]",
 					"strict" : false
 				},
 				{
@@ -320,6 +316,10 @@
 					"strict" : false
 				},
 				{
+					"name" : "IO_SCL",
+					"strict" : false
+				},
+				{
 					"name" : "LED[0]",
 					"strict" : false
 				},
@@ -373,30 +373,6 @@
 				},
 				{
 					"name" : "USER_IO[6]",
-					"strict" : false
-				},
-				{
-					"name" : "VGA_HS",
-					"strict" : false
-				},
-				{
-					"name" : "SDIO_DAT[0]",
-					"strict" : false
-				},
-				{
-					"name" : "SDIO_DAT[1]",
-					"strict" : false
-				},
-				{
-					"name" : "SDIO_DAT[2]",
-					"strict" : false
-				},
-				{
-					"name" : "SDIO_DAT[3]",
-					"strict" : false
-				},
-				{
-					"name" : "SDIO_CMD",
 					"strict" : false
 				},
 				{
@@ -464,11 +440,31 @@
 					"strict" : false
 				},
 				{
-					"name" : "SW[3]",
+					"name" : "VGA_HS",
 					"strict" : false
 				},
 				{
-					"name" : "SW[1]",
+					"name" : "SDIO_DAT[0]",
+					"strict" : false
+				},
+				{
+					"name" : "SDIO_DAT[1]",
+					"strict" : false
+				},
+				{
+					"name" : "SDIO_DAT[2]",
+					"strict" : false
+				},
+				{
+					"name" : "SDIO_DAT[3]",
+					"strict" : false
+				},
+				{
+					"name" : "SDIO_CMD",
+					"strict" : false
+				},
+				{
+					"name" : "SW[3]",
 					"strict" : false
 				},
 				{
@@ -476,11 +472,15 @@
 					"strict" : false
 				},
 				{
-					"name" : "FPGA_CLK2_50",
+					"name" : "SW[1]",
 					"strict" : false
 				},
 				{
 					"name" : "VGA_EN",
+					"strict" : false
+				},
+				{
+					"name" : "FPGA_CLK2_50",
 					"strict" : false
 				},
 				{

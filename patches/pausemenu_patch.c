@@ -138,20 +138,16 @@ void pausemenu()
                     option_selector = 0;
                     break;
 
-                case 2:  /* Reset Pak — restart same PAK fresh */
-                    /* Save current PAK name so the relaunch auto-loads it
-                     * instead of showing the PAK browser. */
-                    {
-                        FILE *rf = fopen("/tmp/openbor_restart.pak", "w");
-                        if (rf) {
-                            fprintf(rf, "%s", packfile);
-                            fclose(rf);
-                        }
-                    }
+                case 2:  /* Reset Pak -- restart same PAK fresh.
+                          * The .current.pak cache lives on SD; just exit
+                          * and the daemon relaunch picks up the same file
+                          * via sdlport_patch's stat() check. */
                     exit(0);
                     break;
 
-                case 3:  /* Quit — exit OpenBOR, daemon relaunches to PAK browser */
+                case 3:  /* Quit -- delete the cached PAK so the relaunch
+                          * falls back to OpenBOR's builtin browser. */
+                    remove("/media/fat/games/OpenBOR/.current.pak");
                     exit(0);
                     break;
                 }

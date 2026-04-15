@@ -120,12 +120,20 @@ void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
     int src_bpp_bytes = bpp / 8;
 
     if (bpp == 16) {
-        /* RGB565 — row-by-row copy using source pitch */
+        /* OpenBOR's 16bpp surfaces are BGR565 (B in high bits). The FPGA
+         * decoder expects RGB565 (R in high bits). Swap the R and B
+         * 5-bit fields per pixel while preserving the 6-bit G channel. */
         const uint8_t* src = (const uint8_t*)pixels;
         for (int y = 0; y < height; y++) {
-            memcpy((void*)(dst + y * NV_FRAME_WIDTH),
-                   src + y * pitch,
-                   width * 2);
+            const uint16_t* src_row = (const uint16_t*)(src + y * pitch);
+            volatile uint16_t* dst_row = dst + y * NV_FRAME_WIDTH;
+            for (int x = 0; x < width; x++) {
+                uint16_t px = src_row[x];
+                uint16_t r5 = px & 0x001F;
+                uint16_t g6 = px & 0x07E0;
+                uint16_t b5 = (px & 0xF800) >> 11;
+                dst_row[x] = (r5 << 11) | g6 | b5;
+            }
         }
     }
     else if (bpp == 8 && palette) {

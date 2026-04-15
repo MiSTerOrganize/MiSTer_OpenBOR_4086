@@ -7,16 +7,24 @@
  * PATCH: In sdl/control.c, replace the control_update() function.
  *
  * MiSTer joystick bitmask (from hps_io):
- *   bit 0  = Right       → FLAG_MOVERIGHT
- *   bit 1  = Left        → FLAG_MOVELEFT
- *   bit 2  = Down        → FLAG_MOVEDOWN
- *   bit 3  = Up          → FLAG_MOVEUP
- *   bit 4  = Button 0 (A)    → FLAG_ATTACK  (Attack/confirm)
- *   bit 5  = Button 1 (B)    → FLAG_JUMP    (Jump)
- *   bit 6  = Button 2 (X)    → FLAG_SPECIAL (Special)
- *   bit 7  = Button 3 (Y)    → FLAG_ATTACK2 (Attack2)
- *   bit 8  = Button 4 (Start) → FLAG_START
- *   bit 9  = Button 5 (Select) → FLAG_SCREENSHOT
+ *   bit 0  = Right       -> FLAG_MOVERIGHT
+ *   bit 1  = Left        -> FLAG_MOVELEFT
+ *   bit 2  = Down        -> FLAG_MOVEDOWN
+ *   bit 3  = Up          -> FLAG_MOVEUP
+ *
+ * On this hardware + controller the bit-order after hps_io's jn
+ * remapping lands with the right-side face button at bit 4 and the
+ * bottom face button at bit 5 (verified by playtesting -- pause menu
+ * confirm was landing on Xbox B instead of Xbox A). We route the
+ * bottom button to FLAG_ATTACK so "confirm = bottom button" matches
+ * MiSTer convention. The top-row pair is swapped for consistency.
+ *
+ *   bit 4  = Xbox B (right)  -> FLAG_JUMP    (Jump)
+ *   bit 5  = Xbox A (bottom) -> FLAG_ATTACK  (Attack / confirm)
+ *   bit 6  = Xbox Y (top)    -> FLAG_ATTACK2 (Attack2)
+ *   bit 7  = Xbox X (left)   -> FLAG_SPECIAL (Special / back)
+ *   bit 8  = Start           -> FLAG_START
+ *   bit 9  = Select          -> FLAG_SCREENSHOT
  *
  * Copyright (C) 2026 MiSTer Organize — GPL-3.0
  */
@@ -50,10 +58,10 @@ void control_update(s_playercontrols ** playercontrols, int numplayers)
             if (joy & 0x002) k |= FLAG_MOVELEFT;
             if (joy & 0x004) k |= FLAG_MOVEDOWN;
             if (joy & 0x008) k |= FLAG_MOVEUP;
-            if (joy & 0x010) k |= FLAG_ATTACK;     /* A = Attack */
-            if (joy & 0x020) k |= FLAG_JUMP;       /* B = Jump */
-            if (joy & 0x040) k |= FLAG_SPECIAL;    /* X = Special */
-            if (joy & 0x080) k |= FLAG_ATTACK2;    /* Y = Attack2 */
+            if (joy & 0x010) k |= FLAG_JUMP;       /* Xbox B (right)  = Jump */
+            if (joy & 0x020) k |= FLAG_ATTACK;     /* Xbox A (bottom) = Attack / confirm */
+            if (joy & 0x040) k |= FLAG_ATTACK2;    /* Xbox Y (top)    = Attack2 */
+            if (joy & 0x080) k |= FLAG_SPECIAL;    /* Xbox X (left)   = Special / back */
             if (joy & 0x100) k |= FLAG_START;      /* Start */
         }
 #else

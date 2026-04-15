@@ -109,47 +109,48 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef MISTER_NATIVE_VIDEO
+    /* Persistent cache path for the OSD-loaded PAK. Lives on SD card
+     * (not /tmp) so it survives restart flows cleanly, and is at a
+     * fixed absolute path so cwd doesn't matter. Rewritten each time
+     * a fresh PAK arrives via the FPGA cart channel. */
+    #define MISTER_PAK_CACHE "/media/fat/games/OpenBOR/.current.pak"
     {
-        /* Check if a PAK was loaded via MiSTer OSD file browser.
-         * If so, write it to a temp file and skip the PAK browser menu. */
+        /* 1) Fresh OSD cart? Overwrite the cache. */
         uint32_t pak_size = NativeVideoWriter_CheckCart();
         if (pak_size > 0) {
             void *pak_buf = malloc(pak_size);
             if (pak_buf) {
                 uint32_t bytes_read = NativeVideoWriter_ReadCart(pak_buf, pak_size);
                 if (bytes_read > 0) {
-                    FILE *f = fopen("/tmp/openbor_osd.pak", "wb");
+                    FILE *f = fopen(MISTER_PAK_CACHE, "wb");
                     if (f) {
                         fwrite(pak_buf, 1, bytes_read, f);
                         fclose(f);
-                        strcpy(packfile, "/tmp/openbor_osd.pak");
-                        NativeVideoWriter_AckCart();
-                        fprintf(stderr, "MiSTer OSD: loaded PAK (%u bytes)\n", bytes_read);
+                        fprintf(stderr, "MiSTer OSD: cached PAK (%u bytes) at %s\n",
+                                bytes_read, MISTER_PAK_CACHE);
                     }
                 }
                 free(pak_buf);
+                NativeVideoWriter_AckCart();
             }
         }
 
-        /* If no OSD PAK, check for restart file from Reset Pak */
-        if (strcmp(packfile, "/tmp/openbor_osd.pak") != 0) {
-            FILE *rf = fopen("/tmp/openbor_restart.pak", "r");
-            if (rf) {
-                char restart_pak[128] = {0};
-                if (fgets(restart_pak, sizeof(restart_pak), rf)) {
-                    char *nl = strchr(restart_pak, '\n');
-                    if (nl) *nl = 0;
-                    if (strlen(restart_pak) > 0) {
-                        strncpy(packfile, restart_pak, sizeof(packfile) - 1);
-                        fprintf(stderr, "MiSTer: Restarting PAK: %s\n", packfile);
-                    }
-                }
-                fclose(rf);
-                remove("/tmp/openbor_restart.pak");
-            } else {
-                /* No OSD PAK, no restart — show PAK browser */
-                Menu();
-            }
+        /* 2) Pick the next PAK to play. Priority:
+         *    - Cached file from OSD / previous session (covers fresh
+         *      load AND Reset Pak restart).
+         *    - Otherwise fall back to OpenBOR's builtin PAK browser.
+         * The Quit action in the pause menu deletes the cache before
+         * exiting, so Quit -> relaunch lands on Menu() instead of
+         * replaying the same PAK. */
+        struct stat st;
+        if (stat(MISTER_PAK_CACHE, &st) == 0 && st.st_size > 0) {
+            strncpy(packfile, MISTER_PAK_CACHE, sizeof(packfile) - 1);
+            packfile[sizeof(packfile) - 1] = 0;
+            fprintf(stderr, "MiSTer: loading PAK %s (%ld bytes)\n",
+                    packfile, (long)st.st_size);
+        } else {
+            fprintf(stderr, "MiSTer: no cached PAK, opening builtin browser\n");
+            Menu();
         }
     }
 #else
