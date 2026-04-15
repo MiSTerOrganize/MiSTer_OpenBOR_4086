@@ -147,7 +147,7 @@ void pausemenu()
 
                 case 3:  /* Quit -- delete the cached PAK so the relaunch
                           * falls back to OpenBOR's builtin browser. */
-                    remove("/media/fat/games/OpenBOR/.current.pak");
+                    remove("/tmp/openbor_current.pak");
                     exit(0);
                     break;
                 }

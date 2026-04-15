@@ -109,11 +109,15 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef MISTER_NATIVE_VIDEO
-    /* Persistent cache path for the OSD-loaded PAK. Lives on SD card
-     * (not /tmp) so it survives restart flows cleanly, and is at a
-     * fixed absolute path so cwd doesn't matter. Rewritten each time
-     * a fresh PAK arrives via the FPGA cart channel. */
-    #define MISTER_PAK_CACHE "/media/fat/games/OpenBOR/.current.pak"
+    /* Cart cache lives on tmpfs (/tmp). This is critical for load
+     * speed: OpenBOR reads the PAK every time it starts, so the cache
+     * has to be in RAM -- reading a 100+ MB PAK off SD takes minutes.
+     * /tmp survives the Reset Pak exit+relaunch cycle (same Linux
+     * session), and is cleared on reboot which is the right behaviour
+     * -- after a reboot the user will re-pick through MiSTer's OSD,
+     * the cart will stream via ioctl into DDR3, and we cache it here
+     * fresh. */
+    #define MISTER_PAK_CACHE "/tmp/openbor_current.pak"
     {
         /* 1) Fresh OSD cart? Overwrite the cache. */
         uint32_t pak_size = NativeVideoWriter_CheckCart();
