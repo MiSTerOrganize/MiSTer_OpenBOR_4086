@@ -14,7 +14,7 @@
  *
  * CONTROLS:
  *   D-pad Up/Down  — navigate menu entries
- *   A Button (FLAG_ATTACK)    — confirm / select entry
+ *   Xbox A (bottom, FLAG_JUMP in this core's mapping) -- confirm / select entry
  *   X Button (FLAG_SPECIAL) — back (closes menu from main, or back to main from Options)
  *   Start Button (FLAG_START) — also confirms
  *   D-pad Left/Right — adjust Music/SFX volume in Options submenu
@@ -121,8 +121,8 @@ void pausemenu()
                 sound_play_sample(SAMPLE_BEEP, 0, savedata.effectvol, savedata.effectvol, 100);
             }
 
-            /* A button (Attack) or Start — confirm selection */
-            if(newkeys & (FLAG_ATTACK | FLAG_START))
+            /* Xbox A (FLAG_JUMP in this mapping) or Start -- confirm selection */
+            if(newkeys & (FLAG_JUMP | FLAG_START))
             {
                 sound_play_sample(SAMPLE_BEEP2, 0, savedata.effectvol, savedata.effectvol, 100);
                 switch(pauselector)
@@ -209,8 +209,8 @@ void pausemenu()
                 sound_play_sample(SAMPLE_BEEP, 0, savedata.effectvol, savedata.effectvol, 100);
             }
 
-            /* A button or Start — confirm (only Back does anything) */
-            if(newkeys & (FLAG_ATTACK | FLAG_START))
+            /* Xbox A (FLAG_JUMP) or Start -- confirm (only Back does anything) */
+            if(newkeys & (FLAG_JUMP | FLAG_START))
             {
                 if(option_selector == 2)  /* Back */
                 {

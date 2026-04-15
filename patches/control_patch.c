@@ -19,12 +19,12 @@
  * bottom button to FLAG_ATTACK so "confirm = bottom button" matches
  * MiSTer convention. The top-row pair is swapped for consistency.
  *
- *   bit 4  = Xbox B (right)  -> FLAG_JUMP    (Jump)
- *   bit 5  = Xbox A (bottom) -> FLAG_ATTACK  (Attack / confirm)
+ *   bit 4  = Xbox B (right)  -> FLAG_ATTACK  (Attack -- primary, beat-em-up)
+ *   bit 5  = Xbox A (bottom) -> FLAG_JUMP    (Jump -- AND pause menu confirm)
  *   bit 6  = Xbox Y (top)    -> FLAG_ATTACK2 (Attack2)
- *   bit 7  = Xbox X (left)   -> FLAG_SPECIAL (Special / back)
+ *   bit 7  = Xbox X (left)   -> FLAG_SPECIAL (Special / pause menu back)
  *   bit 8  = Start           -> FLAG_START
- *   bit 9  = Select          -> FLAG_SCREENSHOT
+ *   bit 9  = Select          -> unmapped (screenshot removed from this core)
  *
  * Copyright (C) 2026 MiSTer Organize — GPL-3.0
  */
@@ -50,18 +50,15 @@ void control_update(s_playercontrols ** playercontrols, int numplayers)
         {
             uint32_t joy = NativeVideoWriter_ReadJoystick(player);
 
-            /* Select button = screenshot */
-            if (joy & 0x200) k |= FLAG_SCREENSHOT;
-
             /* Map MiSTer joystick bits to OpenBOR flags */
             if (joy & 0x001) k |= FLAG_MOVERIGHT;
             if (joy & 0x002) k |= FLAG_MOVELEFT;
             if (joy & 0x004) k |= FLAG_MOVEDOWN;
             if (joy & 0x008) k |= FLAG_MOVEUP;
-            if (joy & 0x010) k |= FLAG_JUMP;       /* Xbox B (right)  = Jump */
-            if (joy & 0x020) k |= FLAG_ATTACK;     /* Xbox A (bottom) = Attack / confirm */
+            if (joy & 0x010) k |= FLAG_ATTACK;     /* Xbox B (right)  = Attack (primary) */
+            if (joy & 0x020) k |= FLAG_JUMP;       /* Xbox A (bottom) = Jump + pause confirm */
             if (joy & 0x040) k |= FLAG_ATTACK2;    /* Xbox Y (top)    = Attack2 */
-            if (joy & 0x080) k |= FLAG_SPECIAL;    /* Xbox X (left)   = Special / back */
+            if (joy & 0x080) k |= FLAG_SPECIAL;    /* Xbox X (left)   = Special / pause back */
             if (joy & 0x100) k |= FLAG_START;      /* Start */
         }
 #else
