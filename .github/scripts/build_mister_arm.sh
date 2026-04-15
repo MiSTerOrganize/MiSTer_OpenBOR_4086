@@ -10,9 +10,12 @@ set -e
 SDL_PREFIX=/tmp/sdl12
 
 apt-get update -qq
-apt-get install -y -qq gcc g++ make wget git python3 libasound2-dev >/dev/null 2>&1
+apt-get install -y -qq gcc g++ make wget git python3 >/dev/null 2>&1
 
-# ── Build SDL 1.2.15 (static, fbcon, ALSA, dummy) ────────────────
+# ── Build SDL 1.2.15 (static, dummy video + audio only) ──────────
+# Per CLAUDE.md: no ALSA, no fbcon. FPGA drives both video and audio
+# directly via DDR3 ring buffers; SDL is only used for timers and
+# threads. The dummy drivers keep SDL happy without touching hardware.
 echo "=== Building SDL 1.2.15 ==="
 cd /tmp
 wget -q https://www.libsdl.org/release/SDL-1.2.15.tar.gz
@@ -27,8 +30,8 @@ cd SDL-1.2.15
   --enable-static \
   --disable-pulseaudio \
   --disable-esd \
-  --enable-alsa \
-  --enable-video-fbcon \
+  --disable-alsa \
+  --disable-video-fbcon \
   --enable-video-dummy \
   --quiet
 make -j$(nproc) --quiet
@@ -115,9 +118,11 @@ VERSIONEOF
 # ── Apply POSIX compat patch ────────────────────────────────────
 sed -i 's/stricmp/strcasecmp/g' openbor.h
 
-# ── Copy native_video_writer into source tree ────────────────────
+# ── Copy native_video_writer + native_audio_writer into source tree ─
 cp /build/src/native_video_writer.c .
 cp /build/src/native_video_writer.h .
+cp /build/src/native_audio_writer.c .
+cp /build/src/native_audio_writer.h .
 
 # ── Apply Makefile patches ───────────────────────────────────────
 python3 /build/.github/scripts/apply_patches.py /tmp/openbor /build/patches

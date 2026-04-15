@@ -11,10 +11,12 @@
  *
  *   #ifdef MISTER_NATIVE_VIDEO
  *   #include "native_video_writer.h"
+ *   #include "native_audio_writer.h"
  *   #include <sys/stat.h>
+ *   #include <stdlib.h>
  *   #endif
  *
- * Copyright (C) 2026 MiSTer Organize — GPL-3.0
+ * Copyright (C) 2026 MiSTer Organize -- GPL-3.0
  */
 
 int main(int argc, char *argv[])
@@ -53,6 +55,13 @@ int main(int argc, char *argv[])
     }
 #endif
 
+#ifdef MISTER_NATIVE_VIDEO
+    /* Disable SDL's audio + video subsystems entirely. The FPGA drives
+     * both via DDR3 ring buffers; SDL just provides timers/threads/events. */
+    setenv("SDL_VIDEODRIVER", "dummy",  1);
+    setenv("SDL_AUDIODRIVER", "dummy",  1);
+#endif
+
     setSystemRam();
     initSDL();
 
@@ -60,6 +69,12 @@ int main(int argc, char *argv[])
     /* Initialize DDR3 native video writer */
     if (!NativeVideoWriter_Init()) {
         fprintf(stderr, "NativeVideoWriter: init failed, falling back to SDL\n");
+    }
+
+    /* Initialize DDR3 native audio writer. sblaster's SB_playstart
+     * thread will refuse to start if this fails. */
+    if (!NativeAudioWriter_Init()) {
+        fprintf(stderr, "NativeAudioWriter: init failed, audio will be silent\n");
     }
 
     /* Create MiSTer save directory */
@@ -149,6 +164,7 @@ int main(int argc, char *argv[])
 
 #ifdef MISTER_NATIVE_VIDEO
     NativeVideoWriter_Shutdown();
+    NativeAudioWriter_Shutdown();
 #endif
 
     borExit(0);

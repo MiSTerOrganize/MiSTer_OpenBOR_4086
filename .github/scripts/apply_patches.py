@@ -105,10 +105,10 @@ endif
         "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error\nendif"
     )
 
-    # Add native_video_writer.o to objects
+    # Add native_video_writer.o and native_audio_writer.o to objects
     mf = mf.replace(
         "sdl/menu.o                                                                        \nendif",
-        "sdl/menu.o                                                                        \nendif\n\n\nifdef BUILD_MISTER\nGAME_CONSOLE   += native_video_writer.o\nendif"
+        "sdl/menu.o                                                                        \nendif\n\n\nifdef BUILD_MISTER\nGAME_CONSOLE   += native_video_writer.o native_audio_writer.o\nendif"
     )
 
     # Add strip rule
@@ -181,7 +181,7 @@ endif
     # Add includes
     src = src.replace(
         '#include "menu.h"',
-        '#include "menu.h"\n#ifdef MISTER_NATIVE_VIDEO\n#include "native_video_writer.h"\n#include <sys/stat.h>\n#include <stdlib.h>\n#endif'
+        '#include "menu.h"\n#ifdef MISTER_NATIVE_VIDEO\n#include "native_video_writer.h"\n#include "native_audio_writer.h"\n#include <sys/stat.h>\n#include <stdlib.h>\n#endif'
     )
 
     # Replace main() — it's the last function in the file
@@ -218,6 +218,12 @@ endif
     src = src.replace(old_macro, new_macro)
     write(os.path.join(obor, 'source/utils.c'), src)
     print("  Save path redirected.")
+
+    # -- 7. Replace sdl/sblaster.c with MiSTer DDR3 audio backend --------
+    print("Patching sdl/sblaster.c (DDR3 audio backend)...")
+    sb = read(os.path.join(patches, 'sblaster_patch.c'))
+    write(os.path.join(obor, 'sdl/sblaster.c'), sb)
+    print("  sdl/sblaster.c replaced.")
 
     print("\nAll patches applied successfully.")
 
