@@ -12,15 +12,25 @@ SDL_PREFIX=/tmp/sdl12
 apt-get update -qq
 apt-get install -y -qq gcc g++ make wget git python3 >/dev/null 2>&1
 
-# ── Build SDL 1.2.15 (static, dummy video + audio only) ──────────
-# Per CLAUDE.md: no ALSA, no fbcon. FPGA drives both video and audio
-# directly via DDR3 ring buffers; SDL is only used for timers and
-# threads. The dummy drivers keep SDL happy without touching hardware.
+# ── Build SDL 1.2.15 (custom dummy that writes to DDR3) ──────────
+# Per CLAUDE.md: no ALSA, no real fbcon. We patch SDL's "dummy"
+# video driver in-place so its UpdateRects hook converts the final
+# composited SDL surface to RGB565 and writes it to the DDR3 ring
+# the FPGA reads. This way OpenBOR runs through its full SDL
+# pipeline (SDL_BlitSurface, format conversion, etc.) and we tap
+# the LAST stage with already-converted pixels in a known SDL
+# format -- avoids OpenBOR's per-render-path quirks (8-bit-mode
+# blend bugs, etc.) that bit us when intercepting at video_copy_screen.
 echo "=== Building SDL 1.2.15 ==="
 cd /tmp
 wget -q https://www.libsdl.org/release/SDL-1.2.15.tar.gz
 tar xzf SDL-1.2.15.tar.gz
 cd SDL-1.2.15
+
+# Patch the dummy video driver -- this is what runs when
+# SDL_VIDEODRIVER=dummy. Inject DDR3 mmap + UpdateRects writer.
+python3 /build/.github/scripts/patch_sdl_dummy.py src/video/dummy/SDL_nullvideo.c
+
 ./configure \
   --prefix=$SDL_PREFIX \
   --disable-video-x11 \

@@ -133,45 +133,17 @@ endif
     write(os.path.join(obor, 'openbor.c'), src)
     print("  pausemenu() replaced.")
 
-    # ── 3. Patch sdl/video.c — intercept video_copy_screen ─────────
-    print("Patching sdl/video.c (video intercept)...")
-    src = read(os.path.join(obor, 'sdl/video.c'))
-
-    # Add include
-    src = src.replace(
-        '#include "openbor.h"',
-        '#include "openbor.h"\n#ifdef MISTER_NATIVE_VIDEO\n#include "native_video_writer.h"\n#endif'
-    )
-
-    # Intercept at the top of video_copy_screen() and read the raw
-    # s_screen directly. Crucially: determine bpp from src->pixelformat,
-    # NOT from the global `bytes_per_pixel` which is the OUTPUT surface
-    # depth. OpenBOR can run the internal vscreen in PIXEL_8 even while
-    # the display is PIXEL_32 -- passing bytes_per_pixel * 8 would tell
-    # NativeVideoWriter the source is 32bpp when it's actually 8bpp
-    # indexed, so palette indices get interpreted as R/G/B/A bytes and
-    # enemy colours go wrong.
-    src = src.replace(
-        "int video_copy_screen(s_screen* src)\n{\n\tunsigned char *sp;",
-        "int video_copy_screen(s_screen* src)\n{\n#ifdef MISTER_NATIVE_VIDEO\n"
-        "\t{ int _nv_bpp, _nv_bytes;\n"
-        "\t  switch (src->pixelformat) {\n"
-        "\t    case PIXEL_8:  case PIXEL_x8: _nv_bpp = 8;  _nv_bytes = 1; break;\n"
-        "\t    case PIXEL_16:                _nv_bpp = 16; _nv_bytes = 2; break;\n"
-        "\t    case PIXEL_32:                _nv_bpp = 32; _nv_bytes = 4; break;\n"
-        "\t    default:                      _nv_bpp = bytes_per_pixel * 8;\n"
-        "\t                                  _nv_bytes = bytes_per_pixel; break;\n"
-        "\t  }\n"
-        "\t  NativeVideoWriter_WriteFrame(src->data, src->width, src->height,\n"
-        "\t                               src->width * _nv_bytes, _nv_bpp, src->palette);\n"
-        "\t  return 1;\n"
-        "\t}\n"
-        "#endif\n"
-        "\tunsigned char *sp;"
-    )
-
-    write(os.path.join(obor, 'sdl/video.c'), src)
-    print("  video_copy_screen intercepted.")
+    # ── 3. sdl/video.c -- NO LONGER PATCHED ────────────────────────
+    # We previously intercepted video_copy_screen() to grab OpenBOR's
+    # vscreen and convert it ourselves. That tripped over OpenBOR's
+    # PIXEL_32 blend bugs (R/B swap in some inline blends) which only
+    # bit certain enemy sprites. Now we let video_copy_screen run
+    # untouched -- OpenBOR's normal SDL pipeline (vscreen -> bscreen
+    # -> SDL_BlitSurface -> screen surface) handles all format
+    # conversion via SDL's well-tested code. Our patched dummy video
+    # driver (see patch_sdl_dummy.py) reads screen->pixels in its
+    # UpdateRects hook and writes RGB565 to DDR3.
+    print("Skipping sdl/video.c -- using SDL dummy-driver DDR3 bridge instead.")
 
     # ── 4. Patch sdl/control.c — replace control_update() ────────────
     print("Patching sdl/control.c (input mapping)...")
