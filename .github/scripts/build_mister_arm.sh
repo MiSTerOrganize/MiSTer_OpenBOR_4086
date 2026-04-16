@@ -105,18 +105,16 @@ CPPFLAGS="-I$SDL_PREFIX/include" LDFLAGS="-L$SDL_PREFIX/lib" \
 make -j$(nproc) --quiet
 make install --quiet
 
-# ── Clone OpenBOR r4034 source (rofl0r svn mirror) ───────────────
-# r4034 is the highest revision in rofl0r's svn branch and sits in
-# the 4000-4500 sweet spot for maximum PAK compatibility (~300-game
-# packs target this range). Still uses SDL 1.2 with #ifdef SDL2
-# guards, so our SDL 1.2 build works cleanly. Same source layout
-# as r3979 (no engine/ subdirectory move).
-echo "=== Cloning OpenBOR r4034 ==="
+# ── Checkout OpenBOR r4086 from SourceForge SVN ──────────────────
+# r4086 is the most popular build for the ~300-game community packs.
+# Not available in any git mirror — pull directly from SourceForge's
+# SVN at the exact revision. Same flat source layout as r3979, still
+# uses SDL 1.2 with #ifdef SDL2 guards.
+echo "=== Checking out OpenBOR r4086 from SourceForge SVN ==="
+apt-get install -y -qq subversion >/dev/null 2>&1
 cd /tmp
-git clone --filter=blob:none https://github.com/rofl0r/openbor.git
+svn checkout -r 4086 svn://svn.code.sf.net/p/openbor/engine/trunk openbor
 cd openbor
-git fetch origin svn
-git checkout FETCH_HEAD
 
 # ── Set version ──────────────────────────────────────────────────
 cat > version.h << 'VERSIONEOF'
@@ -125,7 +123,7 @@ cat > version.h << 'VERSIONEOF'
 #define VERSION_NAME "OpenBOR"
 #define VERSION_MAJOR "3"
 #define VERSION_MINOR "0"
-#define VERSION_BUILD "4034"
+#define VERSION_BUILD "4086"
 #define VERSION "v"VERSION_MAJOR"."VERSION_MINOR" Build "VERSION_BUILD
 #endif
 VERSIONEOF
