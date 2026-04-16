@@ -45,6 +45,9 @@ static volatile uint32_t  *mister_ctrl      = NULL;
 static uint32_t            mister_frame_cnt = 0;
 static int                 mister_active_buf = 0;
 static int                 mister_logged    = 0;
+/* Every MISTER_SAMPLE_EVERY frames, dump a 4x4 grid of sample pixel
+ * values so we can inspect actual colours after OpenBOR + SDL ran. */
+#define MISTER_SAMPLE_EVERY 120   /* ~2 seconds at 60 fps */
 
 static void mister_ddr_init(void) {
     if (mister_ddr) return;
@@ -134,6 +137,28 @@ static void mister_present(SDL_Surface *screen) {
     }
     else {
         return;
+    }
+
+    /* Periodically dump a grid of sample pixels. Lets us see actual
+     * colour values after OpenBOR + SDL ran, for comparing against
+     * the expected on-screen colours. */
+    if (bpp == 32 && (mister_frame_cnt % MISTER_SAMPLE_EVERY) == 0) {
+        const uint32_t *rows = (const uint32_t *)screen->pixels;
+        int pitch_w = pitch / 4;
+        fprintf(stderr, "MiSTer SDL sample (frame %u):\\n", mister_frame_cnt);
+        for (int gy = 0; gy < 3; gy++) {
+            int sy = (h * (gy * 2 + 1)) / 6;
+            for (int gx = 0; gx < 4; gx++) {
+                int sx = (w * (gx * 2 + 1)) / 8;
+                uint32_t px = rows[sy * pitch_w + sx];
+                uint8_t r = ((px & screen->format->Rmask) >> Rshift) << Rloss;
+                uint8_t g = ((px & screen->format->Gmask) >> Gshift) << Gloss;
+                uint8_t b = ((px & screen->format->Bmask) >> Bshift) << Bloss;
+                fprintf(stderr, "  (%3d,%3d) raw=0x%08X r=%02X g=%02X b=%02X\\n",
+                        sx, sy, px, r, g, b);
+            }
+        }
+        fflush(stderr);
     }
 
     mister_frame_cnt++;
