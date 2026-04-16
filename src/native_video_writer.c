@@ -52,6 +52,11 @@ static volatile uint8_t* ddr_base = NULL;
 static uint32_t frame_counter = 0;
 static int active_buf = 0;
 static int first_frame = 1;
+static volatile int debug_dump_request = 0;
+
+void NativeVideoWriter_RequestDebugDump(void) {
+    debug_dump_request = 1;
+}
 
 bool NativeVideoWriter_Init(void) {
     mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -108,12 +113,14 @@ void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
      * look wrong because of byte-order (we extract wrong channels), a
      * palette issue (8bpp path with bad palette), or because OpenBOR
      * already produced wrong colors before reaching us. */
-    if (first_frame > 0) {
-        int frame_no = 4 - first_frame;   /* 1,2,3 */
+    int do_dump = (first_frame > 0) || debug_dump_request;
+    if (do_dump) {
+        const char *why = debug_dump_request ? "SELECT" : "BOOT";
+        int frame_no = debug_dump_request ? 99 : (4 - first_frame);
         const uint8_t *src = (const uint8_t *)pixels;
         fprintf(stderr,
-            "NativeVideoWriter[F%d]: %dx%d pitch=%d bpp=%d palette=%p\n",
-            frame_no, width, height, pitch, bpp, palette);
+            "NativeVideoWriter[%s F%d]: %dx%d pitch=%d bpp=%d palette=%p\n",
+            why, frame_no, width, height, pitch, bpp, palette);
 
         /* Sample three points: top-left, center, bottom-right. */
         int samples[3][2] = {
@@ -152,7 +159,8 @@ void NativeVideoWriter_WriteFrame(const void* pixels, int width, int height,
             }
         }
         fflush(stderr);
-        first_frame--;
+        if (debug_dump_request) debug_dump_request = 0;
+        else if (first_frame > 0)  first_frame--;
     }
 
     /* Clamp to frame dimensions */

@@ -50,6 +50,19 @@ void control_update(s_playercontrols ** playercontrols, int numplayers)
         {
             uint32_t joy = NativeVideoWriter_ReadJoystick(player);
 
+            /* Select (bit 9) is the debug-dump hotkey. Rising edge on
+             * player 0 arms the next video frame to emit per-pixel
+             * sample bytes to the log. Used to diagnose color issues
+             * on whatever is currently on screen. */
+            if (player == 0) {
+                static int select_prev = 0;
+                int select_now = (joy & 0x200) ? 1 : 0;
+                if (select_now && !select_prev) {
+                    NativeVideoWriter_RequestDebugDump();
+                }
+                select_prev = select_now;
+            }
+
             /* Map MiSTer joystick bits to OpenBOR flags */
             if (joy & 0x001) k |= FLAG_MOVERIGHT;
             if (joy & 0x002) k |= FLAG_MOVELEFT;
