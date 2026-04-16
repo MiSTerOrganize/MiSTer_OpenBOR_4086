@@ -238,6 +238,57 @@ endif
     write(os.path.join(obor, 'sdl/sblaster.c'), sb)
     print("  sdl/sblaster.c replaced.")
 
+    # -- 8. Fix R/B swap bug in 32-bit blend functions ------------------
+    # pixelformat.c's blend_screen32 / blend_multiply32 / blend_half32
+    # pass arguments to _color() in swapped (B, G, R) order when they
+    # use their inline math path. That path only runs when blendtables
+    # is NULL, which is ALWAYS the case in PIXEL_32 mode (set_blendtables
+    # is gated on screenformat == PIXEL_8 in openbor.c). Result: every
+    # sprite drawn with a screen / multiply / half blend comes out with
+    # its R and B channels swapped. Player draws are direct copies and
+    # don't hit this; enemies using hit-flash / shadow / alpha blend do.
+    #
+    # Fix: swap the first and third args of the inline _color(...) calls
+    # so argument order matches the _color(r, g, b) signature.
+    print("Patching source/gamelib/pixelformat.c (32-bit blend R/B fix)...")
+    pf_path = os.path.join(obor, 'source/gamelib/pixelformat.c')
+    pf = read(pf_path)
+    fixes = [
+        (
+            "return _color(_screen(color1 >> 16, color2 >> 16),\n"
+            "                  _screen((color1 & 0xFF00) >> 8, (color2 & 0xFF00) >> 8),\n"
+            "                  _screen(color1 & 0xFF, color2 & 0xFF));",
+            "return _color(_screen(color1 & 0xFF, color2 & 0xFF),\n"
+            "                  _screen((color1 & 0xFF00) >> 8, (color2 & 0xFF00) >> 8),\n"
+            "                  _screen(color1 >> 16, color2 >> 16));"
+        ),
+        (
+            "return _color(_multiply(color1 >> 16, color2 >> 16),\n"
+            "                  _multiply((color1 & 0xFF00) >> 8, (color2 & 0xFF00) >> 8),\n"
+            "                  _multiply(color1 & 0xFF, color2 & 0xFF));",
+            "return _color(_multiply(color1 & 0xFF, color2 & 0xFF),\n"
+            "                  _multiply((color1 & 0xFF00) >> 8, (color2 & 0xFF00) >> 8),\n"
+            "                  _multiply(color1 >> 16, color2 >> 16));"
+        ),
+        (
+            "return _color(((color1 >> 16) + (color2 >> 16)) >> 1,\n"
+            "                  (((color1 & 0xFF00) >> 8) + ((color2 & 0xFF00) >> 8)) >> 1,\n"
+            "                  ((color1 & 0xFF) + (color2 & 0xFF)) >> 1);",
+            "return _color(((color1 & 0xFF) + (color2 & 0xFF)) >> 1,\n"
+            "                  (((color1 & 0xFF00) >> 8) + ((color2 & 0xFF00) >> 8)) >> 1,\n"
+            "                  ((color1 >> 16) + (color2 >> 16)) >> 1);"
+        ),
+    ]
+    applied = 0
+    for old, new in fixes:
+        if old in pf:
+            pf = pf.replace(old, new)
+            applied += 1
+        else:
+            print(f"  WARN: blend fix pattern not found (already patched?):\n    {old[:60]}...")
+    write(pf_path, pf)
+    print(f"  {applied}/{len(fixes)} blend R/B fixes applied.")
+
     print("\nAll patches applied successfully.")
 
 if __name__ == '__main__':
