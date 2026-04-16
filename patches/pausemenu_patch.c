@@ -55,7 +55,7 @@ void pausemenu()
     int newkeys;
     char volbuf[64];
     s_set_entry *set = levelsets + current_set;
-    s_screen *pausebuffer = allocscreen(videomodes.hRes, videomodes.vRes, pixelformat);
+    s_screen *pausebuffer = allocscreen(videomodes.hRes, videomodes.vRes, screenformat);
 
     copyscreen(pausebuffer, vscreen);
     spriteq_draw(pausebuffer, 0, MIN_INT, MAX_INT, 0, 0);

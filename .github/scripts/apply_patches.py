@@ -89,7 +89,6 @@ ARCHFLAGS       = -mcpu=cortex-a9 -mfloat-abi=hard -mfpu=neon
 INCLUDES        = $(SDL_PREFIX)/include \\
                   $(SDL_PREFIX)/include/SDL
 LIBRARIES       = $(SDL_PREFIX)/lib
-BUILD_WEBM      = 1
 ifeq ($(BUILD_MISTER), 0)
 BUILD_DEBUG     = 1
 endif
@@ -105,7 +104,7 @@ endif
     # multistatement-macros, etc.)
     mf = mf.replace(
         "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif",
-        "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error -Wno-stringop-overflow -Wno-multistatement-macros\nendif"
+        "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error\nendif"
     )
 
     # Add native_video_writer.o and native_audio_writer.o to objects
@@ -296,23 +295,6 @@ endif
 
     write(pf_path, pf)
     print(f"  {applied}/{len(fixes)} blend R/B fixes applied.")
-
-    # -- 9. Fix sdl/timer.c for SDL 1.2 (v4153 uses SDL 2 API) --------
-    timer_path = os.path.join(obor, 'sdl/timer.c')
-    if os.path.exists(timer_path):
-        timer = read(timer_path)
-        if 'SDL_GetPerformanceCounter' in timer:
-            print("Patching sdl/timer.c (SDL 1.2 timer compat)...")
-            timer = timer.replace(
-                'startcounter = SDL_GetPerformanceCounter();',
-                'startcounter = SDL_GetTicks();  /* SDL 1.2 compat */')
-            timer = timer.replace(
-                '\tu64 freq = SDL_GetPerformanceFrequency();\n'
-                '\tu64 counter = SDL_GetPerformanceCounter();\n'
-                '\treturn counter * (1000000.0 / freq);',
-                '\treturn (u64)SDL_GetTicks() * 1000;  /* SDL 1.2 compat: ms -> us */')
-            write(timer_path, timer)
-            print("  SDL 1.2 timer stubs applied.")
 
     print("\nAll patches applied successfully.")
 

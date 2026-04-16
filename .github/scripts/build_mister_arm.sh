@@ -105,15 +105,18 @@ CPPFLAGS="-I$SDL_PREFIX/include" LDFLAGS="-L$SDL_PREFIX/lib" \
 make -j$(nproc) --quiet
 make install --quiet
 
-# ── Clone OpenBOR v4153 source (DCurrent fork) ───────────────────
-# v4153 is the closest tagged release to the requested build 4086;
-# r4086 predates DCurrent's tag history and isn't in rofl0r's svn
-# mirror either. v4153 is ~67 SVN revisions newer and still
-# supports PIXEL_8 / PIXEL_16 / PIXEL_32 colour depths.
-echo "=== Cloning OpenBOR v4153 ==="
+# ── Clone OpenBOR r4034 source (rofl0r svn mirror) ───────────────
+# r4034 is the highest revision in rofl0r's svn branch and sits in
+# the 4000-4500 sweet spot for maximum PAK compatibility (~300-game
+# packs target this range). Still uses SDL 1.2 with #ifdef SDL2
+# guards, so our SDL 1.2 build works cleanly. Same source layout
+# as r3979 (no engine/ subdirectory move).
+echo "=== Cloning OpenBOR r4034 ==="
 cd /tmp
-git clone --depth 1 --branch v4153 https://github.com/DCurrent/openbor.git
-cd openbor/engine
+git clone --filter=blob:none https://github.com/rofl0r/openbor.git
+cd openbor
+git fetch origin svn
+git checkout FETCH_HEAD
 
 # ── Set version ──────────────────────────────────────────────────
 cat > version.h << 'VERSIONEOF'
@@ -122,7 +125,7 @@ cat > version.h << 'VERSIONEOF'
 #define VERSION_NAME "OpenBOR"
 #define VERSION_MAJOR "3"
 #define VERSION_MINOR "0"
-#define VERSION_BUILD "4153"
+#define VERSION_BUILD "4034"
 #define VERSION "v"VERSION_MAJOR"."VERSION_MINOR" Build "VERSION_BUILD
 #endif
 VERSIONEOF
