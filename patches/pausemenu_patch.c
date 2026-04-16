@@ -154,7 +154,7 @@ void pausemenu()
             }
 
             /* X button (Special) or ESC — close menu (same as Continue) */
-            if(newkeys & (FLAG_SPECIAL | FLAG_ESC))
+            if(newkeys & (FLAG_ATTACK2 | FLAG_ESC))
             {
                 quit = 1;
                 sound_pause_music(0);
@@ -221,7 +221,7 @@ void pausemenu()
             }
 
             /* X button or ESC — back to main pause menu */
-            if(newkeys & (FLAG_SPECIAL | FLAG_ESC))
+            if(newkeys & (FLAG_ATTACK2 | FLAG_ESC))
             {
                 in_options = 0;
                 pauselector = 1;  /* return highlight to Options entry */
