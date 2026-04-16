@@ -89,6 +89,7 @@ ARCHFLAGS       = -mcpu=cortex-a9 -mfloat-abi=hard -mfpu=neon
 INCLUDES        = $(SDL_PREFIX)/include \\
                   $(SDL_PREFIX)/include/SDL
 LIBRARIES       = $(SDL_PREFIX)/lib
+BUILD_WEBM      = 1
 ifeq ($(BUILD_MISTER), 0)
 BUILD_DEBUG     = 1
 endif
