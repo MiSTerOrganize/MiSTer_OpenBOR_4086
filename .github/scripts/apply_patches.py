@@ -258,6 +258,26 @@ endif
             applied += 1
         else:
             print(f"  WARN: blend fix pattern not found (already patched?):\n    {old[:60]}...")
+
+    # -- Default pixelformat/screenformat to PIXEL_32 -------------------
+    # Many PAKs (e.g. "A Tale of Vengeance") ship without data/video.txt.
+    # OpenBOR's built-in defaults are PIXEL_8 for both globals, which
+    # means every character on screen has to share one 256-colour
+    # palette -- that's why enemies look miscoloured in such mods.
+    # Mods that combine characters from different games (SF/KOF/FF)
+    # expect PIXEL_32 so each character gets its own palette. Flip the
+    # defaults here; a PAK with an explicit colourdepth command still
+    # gets its wish because video.txt parsing runs later and overrides.
+    old_defaults = ("int pixelformat = PIXEL_8;\n"
+                    "int screenformat = PIXEL_8;")
+    new_defaults = ("int pixelformat = PIXEL_32;\n"
+                    "int screenformat = PIXEL_32;")
+    if old_defaults in pf:
+        pf = pf.replace(old_defaults, new_defaults)
+        print("  Default pixelformat/screenformat: PIXEL_8 -> PIXEL_32")
+    else:
+        print("  WARN: pixelformat default pattern not found")
+
     write(pf_path, pf)
     print(f"  {applied}/{len(fixes)} blend R/B fixes applied.")
 
