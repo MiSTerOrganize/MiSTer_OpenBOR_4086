@@ -118,64 +118,50 @@ int main(int argc, char *argv[])
      * the cart will stream via ioctl into DDR3, and we cache it here
      * fresh. */
     #define MISTER_PAK_CACHE "/tmp/openbor_current.pak"
+    #define MISTER_F0_PATH   "/media/fat/config/OpenBOR_4086.f0"
     {
-        /* 1) Wait for OSD cart to arrive. MiSTer streams the PAK via
-         * ioctl_download which can take 10+ seconds for large files
-         * (146 MB @ ~15 MB/s). Poll cart_ctrl with a timeout instead
-         * of checking once — otherwise ARM races ahead and opens the
-         * builtin browser before the PAK finishes transferring. */
-        uint32_t pak_size = 0;
-        {
-            struct timespec ts;
-            clock_gettime(CLOCK_MONOTONIC, &ts);
-            long start_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-            long timeout_ms = 15000;  /* 15 seconds max wait */
-            while (1) {
-                pak_size = NativeVideoWriter_CheckCart();
-                if (pak_size > 0) break;
-                clock_gettime(CLOCK_MONOTONIC, &ts);
-                long now_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
-                if (now_ms - start_ms > timeout_ms) {
-                    fprintf(stderr, "MiSTer: no OSD cart after %ld ms, opening browser\n", timeout_ms);
-                    break;
-                }
-                usleep(100000);  /* poll every 100ms */
-            }
-        }
-        if (pak_size > 0) {
-            void *pak_buf = malloc(pak_size);
-            if (pak_buf) {
-                uint32_t bytes_read = NativeVideoWriter_ReadCart(pak_buf, pak_size);
-                if (bytes_read > 0) {
-                    FILE *f = fopen(MISTER_PAK_CACHE, "wb");
-                    if (f) {
-                        fwrite(pak_buf, 1, bytes_read, f);
-                        fclose(f);
-                        fprintf(stderr, "MiSTer OSD: cached PAK (%u bytes) at %s\n",
-                                bytes_read, MISTER_PAK_CACHE);
-                    }
-                }
-                free(pak_buf);
-                NativeVideoWriter_AckCart();
-            }
-        }
+        /* OpenBOR PAKs are 50-150+ MB — too large for the 256 KB DDR3
+         * cart buffer. Instead of streaming data through DDR3, we read
+         * the FILE PATH that MiSTer writes to .f0 when user picks a
+         * PAK from the OSD, then load that file directly from SD.
+         *
+         * Flow: user picks PAK in OSD → MiSTer writes path to .f0 →
+         * ARM polls for .f0 → reads path → deletes .f0 → OpenBOR
+         * loads PAK from SD path. No DDR3 size limit. */
 
-        /* 2) Pick the next PAK to play. Priority:
-         *    - Cached file from OSD / previous session (covers fresh
-         *      load AND Reset Pak restart).
-         *    - Otherwise fall back to OpenBOR's builtin PAK browser.
-         * The Quit action in the pause menu deletes the cache before
-         * exiting, so Quit -> relaunch lands on Menu() instead of
-         * replaying the same PAK. */
+        /* 1) Check for Reset Pak cache (in /tmp, survives exit+relaunch) */
         struct stat st;
         if (stat(MISTER_PAK_CACHE, &st) == 0 && st.st_size > 0) {
             strncpy(packfile, MISTER_PAK_CACHE, sizeof(packfile) - 1);
             packfile[sizeof(packfile) - 1] = 0;
-            fprintf(stderr, "MiSTer: loading PAK %s (%ld bytes)\n",
+            fprintf(stderr, "MiSTer: Reset Pak cache found: %s (%ld bytes)\n",
                     packfile, (long)st.st_size);
-        } else {
-            fprintf(stderr, "MiSTer: no cached PAK, opening builtin browser\n");
-            Menu();
+        }
+        /* 2) Poll for .f0 (MiSTer creates it when user picks from OSD) */
+        else {
+            char f0_path[256] = {0};
+
+            fprintf(stderr, "MiSTer: waiting for OSD PAK selection (.f0)...\n");
+            while (1) {
+                FILE *f = fopen(MISTER_F0_PATH, "r");
+                if (f) {
+                    if (fgets(f0_path, sizeof(f0_path), f)) {
+                        char *nl = strchr(f0_path, '\n');
+                        if (nl) *nl = 0;
+                        char *cr = strchr(f0_path, '\r');
+                        if (cr) *cr = 0;
+                    }
+                    fclose(f);
+                    if (strlen(f0_path) > 0) {
+                        /* Build absolute path and set as packfile */
+                        snprintf(packfile, sizeof(packfile), "/media/fat/%s", f0_path);
+                        remove(MISTER_F0_PATH);
+                        fprintf(stderr, "MiSTer: OSD selected: %s\n", packfile);
+                        break;
+                    }
+                }
+                usleep(200000);  /* poll every 200ms */
+            }
         }
     }
 #else
