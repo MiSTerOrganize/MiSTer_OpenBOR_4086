@@ -360,28 +360,32 @@ always @(posedge ddr_clk) begin
             cart_total_bytes <= 27'd0;
         end
 
-        // Collect bytes
+        // Collect bytes — cap DDR3 writes at 256KB to prevent overflow
+        // (MiSTer streams entire PAK via ioctl even though we only need the .f0 path)
         if (ioctl_download && ioctl_wr && !cart_write_pending) begin
-            case (cart_byte_cnt)
-                3'd0: cart_buf[ 7: 0] <= ioctl_dout;
-                3'd1: cart_buf[15: 8] <= ioctl_dout;
-                3'd2: cart_buf[23:16] <= ioctl_dout;
-                3'd3: cart_buf[31:24] <= ioctl_dout;
-                3'd4: cart_buf[39:32] <= ioctl_dout;
-                3'd5: cart_buf[47:40] <= ioctl_dout;
-                3'd6: cart_buf[55:48] <= ioctl_dout;
-                3'd7: cart_buf[63:56] <= ioctl_dout;
-            endcase
             cart_total_bytes <= ioctl_addr + 27'd1;
 
-            if (cart_byte_cnt == 3'd7) begin
-                cart_write_pending <= 1'b1;
-                cart_write_addr    <= CART_DATA_ADDR + {2'd0, ioctl_addr[26:3]};
-                cart_write_data    <= {ioctl_dout, cart_buf[55:0]};
-                cart_byte_cnt      <= 3'd0;
-            end
-            else begin
-                cart_byte_cnt <= cart_byte_cnt + 3'd1;
+            if (ioctl_addr < 27'h40000) begin
+                case (cart_byte_cnt)
+                    3'd0: cart_buf[ 7: 0] <= ioctl_dout;
+                    3'd1: cart_buf[15: 8] <= ioctl_dout;
+                    3'd2: cart_buf[23:16] <= ioctl_dout;
+                    3'd3: cart_buf[31:24] <= ioctl_dout;
+                    3'd4: cart_buf[39:32] <= ioctl_dout;
+                    3'd5: cart_buf[47:40] <= ioctl_dout;
+                    3'd6: cart_buf[55:48] <= ioctl_dout;
+                    3'd7: cart_buf[63:56] <= ioctl_dout;
+                endcase
+
+                if (cart_byte_cnt == 3'd7) begin
+                    cart_write_pending <= 1'b1;
+                    cart_write_addr    <= CART_DATA_ADDR + {2'd0, ioctl_addr[26:3]};
+                    cart_write_data    <= {ioctl_dout, cart_buf[55:0]};
+                    cart_byte_cnt      <= 3'd0;
+                end
+                else begin
+                    cart_byte_cnt <= cart_byte_cnt + 3'd1;
+                end
             end
         end
 
@@ -389,7 +393,7 @@ always @(posedge ddr_clk) begin
         if (!ioctl_download && cart_dl_prev && cart_loading) begin
             cart_loading      <= 1'b0;
             cart_size_pending <= 1'b1;
-            if (cart_byte_cnt != 3'd0 && !cart_write_pending) begin
+            if (cart_byte_cnt != 3'd0 && !cart_write_pending && cart_total_bytes <= 27'h40000) begin
                 cart_write_pending <= 1'b1;
                 cart_write_addr    <= CART_DATA_ADDR + {2'd0, cart_total_bytes[26:3]};
                 cart_write_data    <= cart_buf;

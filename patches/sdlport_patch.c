@@ -172,7 +172,9 @@ int main(int argc, char *argv[])
     getPakName(pakname, -1);
     video_set_window_title(pakname);
 #endif
+    fprintf(stderr, "MiSTer: entering openborMain()...\n");
     openborMain(argc, argv);
+    fprintf(stderr, "MiSTer: openborMain() returned normally\n");
 
 #ifdef MISTER_NATIVE_VIDEO
     NativeVideoWriter_Shutdown();

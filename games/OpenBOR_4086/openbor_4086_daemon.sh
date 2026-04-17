@@ -59,7 +59,9 @@ while true; do
     if [ -n "$CHILD" ]; then
         if ! kill -0 $CHILD 2>/dev/null; then
             # Process exited (quit, reset pak, or crash) — reap it
-            wait $CHILD 2>/dev/null
+            wait $CHILD
+            EXIT_CODE=$?
+            echo "OpenBOR exited with code $EXIT_CODE at $(date)" >> .Logs/OpenBOR.log
             CHILD=""
             rm -f "$PIDFILE"
             # Don't sleep — restart fast on next iteration
