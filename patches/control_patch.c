@@ -24,7 +24,7 @@
  *   bit 6  = Xbox Y (top)    -> FLAG_ATTACK2 (Attack2)
  *   bit 7  = Xbox X (left)   -> FLAG_SPECIAL (Special -- AND pause menu back)
  *   bit 8  = Start           -> FLAG_START
- *   bit 9  = Select          -> unmapped (screenshot removed from this core)
+ *   bit 9  = Select          -> unmapped
  *
  * Copyright (C) 2026 MiSTer Organize — GPL-3.0
  */

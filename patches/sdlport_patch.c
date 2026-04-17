@@ -89,9 +89,7 @@ int main(int argc, char *argv[])
 #endif
     dirExists(paksDir, 1);
 #ifdef MISTER_NATIVE_VIDEO
-    /* Saves go to /media/fat/saves/OpenBOR_4086/ (redirected in utils.c).
-     * ScreenShots not used (no button mapped to FLAG_SCREENSHOT).
-     * Don't create local Saves/ or ScreenShots/ folders. */
+    /* Saves redirected to /media/fat/saves/OpenBOR_4086/ in utils.c. */
     dirExists(logsDir, 1);
 #else
     dirExists(savesDir, 1);

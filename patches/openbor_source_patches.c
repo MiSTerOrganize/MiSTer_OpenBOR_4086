@@ -76,8 +76,8 @@
  *   #endif
  *
  * When compiled with -DMISTER_NATIVE_VIDEO, any getBasePath() call with
- * "Saves" redirects to /media/fat/saves/OpenBOR/. All other paths
- * (Paks, Logs, ScreenShots) use the original rootDir behavior.
+ * "Saves" redirects to /media/fat/saves/OpenBOR_4086/. All other paths
+ * (Paks, Logs) use the original rootDir behavior.
  *
  * The saves directory is created automatically by OpenBOR if it doesn't
  * exist (dirExists with create=1 is called in the save functions).

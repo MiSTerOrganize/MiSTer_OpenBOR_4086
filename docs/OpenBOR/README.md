@@ -62,7 +62,6 @@ Build 3979 runs the vast majority of OpenBOR mods, including Streets of Rage Rem
 | Y               | Attack2                 |
 | D-pad / Analog  | Move                    |
 | Start           | Pause / add player      |
-| Select          | Screenshot              |
 | Menu button     | MiSTer OSD menu         |
 
 All 4 players use the same button layout. Remap buttons from the MiSTer OSD (press F12 on keyboard, or the OSD button on your IO board).
