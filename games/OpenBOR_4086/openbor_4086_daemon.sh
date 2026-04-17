@@ -72,17 +72,11 @@ while true; do
             FIRST_LOAD=1
             rm -f "$PIDFILE"
             rm -f /tmp/openbor_current.pak
-            # Reset MiSTer's options state, but rewrite the file-loader
-            # state so the OSD picker opens INSIDE games/OpenBOR/Paks
-            # next time -- MiSTer derives its browser starting folder
-            # from the parent of the last-loaded path in OpenBOR_4086.f0.
-            # A non-existent filename means MiSTer fails the auto-load
-            # and falls through to the picker at that dir.
+            # Clear all MiSTer state for this core so next load opens
+            # the OSD picker fresh (no auto-load of previous PAK).
             rm -f /media/fat/config/OpenBOR_4086.cfg \
+                  /media/fat/config/OpenBOR_4086.f0 \
                   /media/fat/config/OpenBOR_4086.s0
-            mkdir -p /media/fat/config
-            printf 'games/OpenBOR_4086/Paks/.placeholder.pak' \
-                > /media/fat/config/OpenBOR_4086.f0
         fi
     fi
 

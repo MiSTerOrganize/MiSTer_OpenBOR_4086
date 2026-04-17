@@ -77,16 +77,6 @@ echo "/media/fat/games/OpenBOR_4086/openbor_4086_daemon.sh &" >> "$STARTUP"
 
 echo "Auto-launcher installed."
 
-# ── Pre-seed MiSTer's file picker to land in games/OpenBOR_4086/Paks ──
-# MiSTer derives the OSD browser starting folder from the parent of
-# the last-loaded path in <CoreName>.f0. A placeholder filename in
-# the right directory forces the picker to open inside Paks/ on
-# first core launch -- otherwise it lands at SD root or, if a
-# legacy /media/fat/OpenBOR/ folder exists, on that legacy folder.
-mkdir -p /media/fat/config
-printf 'games/OpenBOR_4086/Paks/.placeholder.pak' \
-    > /media/fat/config/OpenBOR_4086.f0
-
 # ── Start daemon now ──────────────────────────────────────────────
 /media/fat/games/OpenBOR_4086/openbor_4086_daemon.sh &
 
