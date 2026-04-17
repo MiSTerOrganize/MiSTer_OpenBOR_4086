@@ -14,6 +14,8 @@
  *   #include "native_audio_writer.h"
  *   #include <sys/stat.h>
  *   #include <stdlib.h>
+ *   #include <time.h>
+ *   #include <unistd.h>
  *   #endif
  *
  * Copyright (C) 2026 MiSTer Organize -- GPL-3.0
