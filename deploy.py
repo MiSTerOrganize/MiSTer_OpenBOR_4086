@@ -22,12 +22,12 @@ REPO = Path(__file__).resolve().parent
 
 FILES = [
     # (local path, remote path, chmod)
-    (REPO / "games/OpenBOR/OpenBOR",
-     "/media/fat/games/OpenBOR/OpenBOR", 0o755),
-    (REPO / "games/OpenBOR/openbor_daemon.sh",
-     "/media/fat/games/OpenBOR/openbor_daemon.sh", 0o755),
-    (REPO / "_Console/OpenBOR_20260415.rbf",
-     "/media/fat/_Console/OpenBOR_20260415.rbf", 0o644),
+    (REPO / "games/OpenBOR_4086/OpenBOR",
+     "/media/fat/games/OpenBOR_4086/OpenBOR", 0o755),
+    (REPO / "games/OpenBOR_4086/openbor_4086_daemon.sh",
+     "/media/fat/games/OpenBOR_4086/openbor_4086_daemon.sh", 0o755),
+    (REPO / "_Console/OpenBOR_4086_20260417.rbf",
+     "/media/fat/_Console/OpenBOR_4086_20260417.rbf", 0o644),
 ]
 
 
@@ -61,14 +61,13 @@ def main():
 
     print("\n-- Stopping running OpenBOR + daemon --")
     run(client, "killall -q OpenBOR || true")
-    run(client, "killall -q openbor_daemon.sh || true")
+    run(client, "killall -q openbor_4086_daemon.sh || true")
     run(client, "kill $(cat /tmp/openbor_arm.pid 2>/dev/null) 2>/dev/null || true")
     run(client, "rm -f /tmp/openbor_arm.pid")
     run(client, "rm -rf /tmp/openbor_daemon.lock")
 
     print("\n-- Removing old RBFs --")
-    run(client, "rm -f /media/fat/_Console/OpenBOR_20260411.rbf")
-    run(client, "rm -f /media/fat/_Console/OpenBOR.rbf")
+    run(client, "rm -f /media/fat/_Console/OpenBOR_4086_*.rbf")
 
     print("\n-- Uploading files --")
     sftp = client.open_sftp()
@@ -85,10 +84,11 @@ def main():
     sftp.close()
 
     print("\n-- Re-launching daemon --")
-    run(client, "/media/fat/games/OpenBOR/openbor_daemon.sh &")
+    run(client, "sed -i 's/\\r$//' /media/fat/games/OpenBOR_4086/openbor_4086_daemon.sh")
+    run(client, "nohup /media/fat/games/OpenBOR_4086/openbor_4086_daemon.sh </dev/null >/dev/null 2>&1 & disown")
 
     print("\n-- Verifying deployed files --")
-    run(client, "ls -lh /media/fat/games/OpenBOR/ /media/fat/_Console/OpenBOR_*.rbf")
+    run(client, "ls -lh /media/fat/games/OpenBOR_4086/ /media/fat/_Console/OpenBOR_4086_*.rbf")
 
     client.close()
     print("\nDone.")

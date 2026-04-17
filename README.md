@@ -38,7 +38,7 @@ Extract the release zip to the root of your MiSTer SD card (`/media/fat/`):
 │       ├── OpenBOR                        ARM binary (engine)
 │       ├── openbor_4086_daemon.sh         Auto-launch daemon
 │       ├── Paks/                          Place your .pak game modules here
-│       └── Logs/                          Engine logs (created at startup)
+│       └── .Logs/                         Debug logs (hidden from OSD)
 ├── saves/
 │   └── OpenBOR_4086/                      Game saves (created automatically)
 └── Scripts/
