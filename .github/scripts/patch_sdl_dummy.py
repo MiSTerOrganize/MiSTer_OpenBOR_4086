@@ -205,16 +205,24 @@ def main():
     )
     if vinit_old in src:
         src = src.replace(vinit_old, vinit_new, 1)
+        print("  VideoInit: 32bpp vformat override applied.")
     else:
+        print("  WARN: vformat pattern not found, trying fallback...")
+        # Debug: show what's actually around BitsPerPixel
+        idx = src.find('BitsPerPixel')
+        if idx >= 0:
+            print(f"  Context around BitsPerPixel: {repr(src[max(0,idx-40):idx+80])}")
         init_anchor = "/* We're done!"
         if init_anchor in src:
             src = src.replace(init_anchor, "mister_ddr_init();\n\t" + init_anchor, 1)
+            print("  Fallback: mister_ddr_init() injected (NO 32bpp override).")
         else:
             src = src.replace(
                 "static int DUMMY_VideoInit(_THIS, SDL_PixelFormat *vformat)\n{",
                 "static int DUMMY_VideoInit(_THIS, SDL_PixelFormat *vformat)\n{\n\tmister_ddr_init();",
                 1
             )
+            print("  Fallback 2: mister_ddr_init() injected (NO 32bpp override).")
 
     # 3) Force DUMMY_SetVideoMode to always create 32bpp surfaces.
     setmode_old = (
@@ -230,8 +238,12 @@ def main():
     )
     if setmode_old in src:
         src = src.replace(setmode_old, setmode_new, 1)
+        print("  SetVideoMode: bpp override applied.")
     else:
-        print("WARN: couldn't patch DUMMY_SetVideoMode bpp override", file=sys.stderr)
+        print("  WARN: couldn't patch DUMMY_SetVideoMode bpp override", file=sys.stderr)
+        idx = src.find('DUMMY_SetVideoMode')
+        if idx >= 0:
+            print(f"  Context: {repr(src[idx:idx+120])}", file=sys.stderr)
 
     # 4) Make UpdateRects actually push the screen surface to DDR3.
     update_old = "static void DUMMY_UpdateRects(_THIS, int numrects, SDL_Rect *rects)\n{\n\t/* do nothing. */\n}"
