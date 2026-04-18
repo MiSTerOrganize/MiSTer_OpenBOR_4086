@@ -224,26 +224,7 @@ def main():
             )
             print("  Fallback 2: mister_ddr_init() injected (NO 32bpp override).")
 
-    # 3) Force DUMMY_SetVideoMode to always create 32bpp surfaces.
-    setmode_old = (
-        "SDL_Surface *DUMMY_SetVideoMode(_THIS, SDL_Surface *current,\n"
-        "\t\t\t\tint width, int height, int bpp, Uint32 flags)\n"
-        "{"
-    )
-    setmode_new = (
-        "SDL_Surface *DUMMY_SetVideoMode(_THIS, SDL_Surface *current,\n"
-        "\t\t\t\tint width, int height, int bpp, Uint32 flags)\n"
-        "{\n"
-        "\tif (bpp < 32) { fprintf(stderr, \"MiSTer SDL: forcing bpp %d -> 32\\n\", bpp); bpp = 32; }"
-    )
-    if setmode_old in src:
-        src = src.replace(setmode_old, setmode_new, 1)
-        print("  SetVideoMode: bpp override applied.")
-    else:
-        print("  WARN: couldn't patch DUMMY_SetVideoMode bpp override", file=sys.stderr)
-        idx = src.find('DUMMY_SetVideoMode')
-        if idx >= 0:
-            print(f"  Context: {repr(src[idx:idx+120])}", file=sys.stderr)
+    # 3) DUMMY_SetVideoMode: log bpp but don't force it — mister_present handles all bpp.
 
     # 4) Make UpdateRects actually push the screen surface to DDR3.
     update_old = "static void DUMMY_UpdateRects(_THIS, int numrects, SDL_Rect *rects)\n{\n\t/* do nothing. */\n}"
