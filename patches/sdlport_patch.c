@@ -91,9 +91,7 @@ int main(int argc, char *argv[])
 #endif
     dirExists(paksDir, 1);
 #ifdef MISTER_NATIVE_VIDEO
-    /* Saves redirected to /media/fat/saves/OpenBOR_4086/ in utils.c.
-     * Logs redirected out of games directory entirely. */
-    strncpy(logsDir, "/media/fat/logs/OpenBOR_4086/", sizeof(logsDir) - 1);
+    /* Saves redirected to /media/fat/saves/OpenBOR_4086/ in utils.c. */
     dirExists(logsDir, 1);
 #else
     dirExists(savesDir, 1);

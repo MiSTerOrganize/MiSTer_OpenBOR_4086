@@ -50,10 +50,10 @@ while true; do
         fi
         export SDL_VIDEODRIVER=dummy
         cd "$GAMEDIR"
-        # Rotate the diagnostic log on every launch so we can inspect
-        # what NativeVideoWriter / NativeAudioWriter reported and which
-        # PAK path was chosen (stderr has "first frame %dx%d bpp=%d",
-        # "MiSTer OSD: cached PAK", etc).
+        # Free kernel buffer cache before starting — FC0 ioctl streams
+        # the entire PAK (50-150MB) through SPI, filling the cache.
+        # Without this, repeated PAK loads exhaust RAM and OpenBOR segfaults.
+        echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
         mkdir -p /media/fat/logs/OpenBOR_4086
         mv -f /media/fat/logs/OpenBOR_4086/OpenBOR.log /media/fat/logs/OpenBOR_4086/OpenBOR.prev.log 2>/dev/null
         ./OpenBOR > /media/fat/logs/OpenBOR_4086/OpenBOR.log 2>&1 &
