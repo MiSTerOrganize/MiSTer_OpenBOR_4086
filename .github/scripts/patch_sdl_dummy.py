@@ -83,13 +83,23 @@ static void mister_present(SDL_Surface *screen) {
     int Gloss  = screen->format->Gloss;
     int Bloss  = screen->format->Bloss;
     SDL_Palette *pal = screen->format->palette;
-    if (w > MISTER_FRAME_W) w = MISTER_FRAME_W;
-    if (h > MISTER_FRAME_H) h = MISTER_FRAME_H;
+
+    /* Scale factor: if source is larger than 320x240, downsample.
+     * 640x480 -> 2x, 480x272 -> ~1.5x (round to 1), etc. */
+    int sx = (w + MISTER_FRAME_W - 1) / MISTER_FRAME_W;  /* ceil(w/320) */
+    int sy = (h + MISTER_FRAME_H - 1) / MISTER_FRAME_H;  /* ceil(h/240) */
+    if (sx < 1) sx = 1;
+    if (sy < 1) sy = 1;
+    int out_w = w / sx;  /* output width after scaling */
+    int out_h = h / sy;
+    if (out_w > MISTER_FRAME_W) out_w = MISTER_FRAME_W;
+    if (out_h > MISTER_FRAME_H) out_h = MISTER_FRAME_H;
 
     if (!mister_logged) {
         fprintf(stderr, "MiSTer SDL: first present %dx%d bpp=%d pitch=%d "
+                "scale=%dx%d -> %dx%d "
                 "Rmask=0x%08X Gmask=0x%08X Bmask=0x%08X palette=%p\\n",
-                w, h, bpp, pitch,
+                w, h, bpp, pitch, sx, sy, out_w, out_h,
                 screen->format->Rmask, screen->format->Gmask,
                 screen->format->Bmask, pal);
         mister_logged = 1;
@@ -100,11 +110,11 @@ static void mister_present(SDL_Surface *screen) {
     const uint8_t *rows = (const uint8_t *)screen->pixels;
 
     if (bpp == 32) {
-        for (int y = 0; y < h; y++) {
-            const uint32_t *row = (const uint32_t *)(rows + y * pitch);
+        for (int y = 0; y < out_h; y++) {
+            const uint32_t *row = (const uint32_t *)(rows + (y * sy) * pitch);
             volatile uint16_t *out = dst + y * MISTER_FRAME_W;
-            for (int x = 0; x < w; x++) {
-                uint32_t px = row[x];
+            for (int x = 0; x < out_w; x++) {
+                uint32_t px = row[x * sx];
                 uint8_t r = ((px & screen->format->Rmask) >> Rshift) << Rloss;
                 uint8_t g = ((px & screen->format->Gmask) >> Gshift) << Gloss;
                 uint8_t b = ((px & screen->format->Bmask) >> Bshift) << Bloss;
@@ -113,11 +123,11 @@ static void mister_present(SDL_Surface *screen) {
         }
     }
     else if (bpp == 16) {
-        for (int y = 0; y < h; y++) {
-            const uint16_t *row = (const uint16_t *)(rows + y * pitch);
+        for (int y = 0; y < out_h; y++) {
+            const uint16_t *row = (const uint16_t *)(rows + (y * sy) * pitch);
             volatile uint16_t *out = dst + y * MISTER_FRAME_W;
-            for (int x = 0; x < w; x++) {
-                uint16_t px = row[x];
+            for (int x = 0; x < out_w; x++) {
+                uint16_t px = row[x * sx];
                 uint8_t r = ((px & screen->format->Rmask) >> Rshift) << Rloss;
                 uint8_t g = ((px & screen->format->Gmask) >> Gshift) << Gloss;
                 uint8_t b = ((px & screen->format->Bmask) >> Bshift) << Bloss;
@@ -126,11 +136,11 @@ static void mister_present(SDL_Surface *screen) {
         }
     }
     else if (bpp == 8 && pal) {
-        for (int y = 0; y < h; y++) {
-            const uint8_t *row = rows + y * pitch;
+        for (int y = 0; y < out_h; y++) {
+            const uint8_t *row = rows + (y * sy) * pitch;
             volatile uint16_t *out = dst + y * MISTER_FRAME_W;
-            for (int x = 0; x < w; x++) {
-                SDL_Color c = pal->colors[row[x]];
+            for (int x = 0; x < out_w; x++) {
+                SDL_Color c = pal->colors[row[x * sx]];
                 out[x] = ((c.r >> 3) << 11) | ((c.g >> 2) << 5) | (c.b >> 3);
             }
         }
