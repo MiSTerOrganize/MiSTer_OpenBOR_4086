@@ -27,13 +27,42 @@
 #ifdef MISTER_NATIVE_VIDEO
 /* Crash handler — prints fault address and backtrace to stderr
  * so we can see exactly where the segfault happens. */
-static void mister_crash_handler(int sig, siginfo_t *info, void *ctx)
+static void mister_crash_handler(int sig, siginfo_t *info, void *ucontext)
 {
-    void *bt[20];
+    void *bt[30];
     int count;
+    ucontext_t *uc = (ucontext_t *)ucontext;
+
     fprintf(stderr, "\n=== CRASH: signal %d at address %p ===\n", sig, info->si_addr);
-    count = backtrace(bt, 20);
-    backtrace_symbols_fd(bt, count, STDERR_FILENO);
+
+    /* ARM: get PC, LR, SP from the signal context */
+    fprintf(stderr, "  PC = 0x%08lx\n", (unsigned long)uc->uc_mcontext.arm_pc);
+    fprintf(stderr, "  LR = 0x%08lx\n", (unsigned long)uc->uc_mcontext.arm_lr);
+    fprintf(stderr, "  SP = 0x%08lx\n", (unsigned long)uc->uc_mcontext.arm_sp);
+    fprintf(stderr, "  R0 = 0x%08lx\n", (unsigned long)uc->uc_mcontext.arm_r0);
+    fprintf(stderr, "  R1 = 0x%08lx\n", (unsigned long)uc->uc_mcontext.arm_r1);
+    fprintf(stderr, "  R2 = 0x%08lx\n", (unsigned long)uc->uc_mcontext.arm_r2);
+
+    /* Try backtrace — may be empty on ARM but worth trying */
+    count = backtrace(bt, 30);
+    if (count > 0) {
+        fprintf(stderr, "Backtrace (%d frames):\n", count);
+        backtrace_symbols_fd(bt, count, STDERR_FILENO);
+    }
+
+    /* Also print the PC offset from the binary base for addr2line */
+    FILE *maps = fopen("/proc/self/maps", "r");
+    if (maps) {
+        char line[256];
+        fprintf(stderr, "Maps (first 5):\n");
+        int n = 0;
+        while (fgets(line, sizeof(line), maps) && n < 5) {
+            fprintf(stderr, "  %s", line);
+            n++;
+        }
+        fclose(maps);
+    }
+
     fprintf(stderr, "=== END CRASH ===\n");
     fflush(stderr);
     _exit(139);

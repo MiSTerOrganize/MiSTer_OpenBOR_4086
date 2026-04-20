@@ -104,7 +104,7 @@ endif
     # multistatement-macros, etc.)
     mf = mf.replace(
         "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif",
-        "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error -O1 -g -rdynamic\nendif"
+        "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error -O1 -g -rdynamic -funwind-tables -fasynchronous-unwind-tables -mapcs-frame\nendif"
     )
 
     # Add native_video_writer.o and native_audio_writer.o to objects.
@@ -310,26 +310,12 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
         else:
             print(f"  WARN: blend fix pattern not found (already patched?):\n    {old[:60]}...")
 
-    # -- Default pixelformat to PIXEL_32 for correct per-character colors.
-    # SDL dummy driver now reports 32bpp (VideoInit override), so the
-    # SDL surface matches the engine's internal rendering. No mismatch.
-    pf_variants = [
-        ("int pixelformat = PIXEL_8;\nint screenformat = PIXEL_8;",
-         "int pixelformat = PIXEL_32;\nint screenformat = PIXEL_32;"),
-        ("int pixelformat = PIXEL_x8;",
-         "int pixelformat = PIXEL_32;"),
-        ("int pixelformat = PIXEL_8;",
-         "int pixelformat = PIXEL_32;"),
-    ]
-    override_applied = False
-    for old_defaults, new_defaults in pf_variants:
-        if old_defaults in pf:
-            pf = pf.replace(old_defaults, new_defaults, 1)
-            print(f"  Default pixelformat override applied:\n    - {old_defaults!r}\n    + {new_defaults!r}")
-            override_applied = True
-            break
-    if not override_applied:
-        print("  WARN: no pixelformat default pattern matched")
+    # -- Keep native PIXEL_8 default.
+    # PIXEL_32 causes NULL pointer crash at address 0xe4 during model
+    # loading — OpenBOR structs aren't initialized in 32bpp path.
+    # 8bpp works for all PAKs. Colors may use shared palette but no crashes.
+    # PAKs with data/video.txt still override to their own format.
+    print("  Keeping native PIXEL_8 default (all PAKs work, no crashes).")
 
     write(pf_path, pf)
     print(f"  {applied}/{len(fixes)} blend R/B fixes applied.")
