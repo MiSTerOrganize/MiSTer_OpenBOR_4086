@@ -145,9 +145,10 @@ void pausemenu()
                     exit(0);
                     break;
 
-                case 3:  /* Quit -- delete the cached PAK so the relaunch
-                          * falls back to OpenBOR's builtin browser. */
+                case 3:  /* Quit -- delete .s0 and cache so the relaunch
+                          * has no PAK to load, showing the OSD menu. */
                     remove("/tmp/openbor_current.pak");
+                    remove("/media/fat/config/OpenBOR_4086.s0");
                     exit(0);
                     break;
                 }
