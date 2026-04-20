@@ -104,7 +104,7 @@ endif
     # multistatement-macros, etc.)
     mf = mf.replace(
         "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif",
-        "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error -O1\nendif"
+        "ifdef BUILD_SDL\nCFLAGS \t       += -DSDL\nendif\n\n\nifdef BUILD_MISTER\nCFLAGS         += -DMISTER_NATIVE_VIDEO -fcommon -Wno-error -O1 -g -rdynamic\nendif"
     )
 
     # Add native_video_writer.o and native_audio_writer.o to objects.

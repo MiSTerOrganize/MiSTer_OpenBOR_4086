@@ -17,12 +17,28 @@
  *   #include <time.h>
  *   #include <unistd.h>
  *   #include <pthread.h>
+ *   #include <signal.h>
+ *   #include <execinfo.h>
  *   #endif
  *
  * Copyright (C) 2026 MiSTer Organize -- GPL-3.0
  */
 
 #ifdef MISTER_NATIVE_VIDEO
+/* Crash handler — prints fault address and backtrace to stderr
+ * so we can see exactly where the segfault happens. */
+static void mister_crash_handler(int sig, siginfo_t *info, void *ctx)
+{
+    void *bt[20];
+    int count;
+    fprintf(stderr, "\n=== CRASH: signal %d at address %p ===\n", sig, info->si_addr);
+    count = backtrace(bt, 20);
+    backtrace_symbols_fd(bt, count, STDERR_FILENO);
+    fprintf(stderr, "=== END CRASH ===\n");
+    fflush(stderr);
+    _exit(139);
+}
+
 /* PAK swap detection thread — polls .s0 for path changes during gameplay.
  * When user mounts a new PAK from OSD, .s0 updates instantly. This thread
  * detects the change and triggers a clean shutdown so the daemon restarts
@@ -99,8 +115,16 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef MISTER_NATIVE_VIDEO
-    /* Disable SDL's audio + video subsystems entirely. The FPGA drives
-     * both via DDR3 ring buffers; SDL just provides timers/threads/events. */
+    /* Install crash handler FIRST — catches segfaults with backtrace */
+    {
+        struct sigaction sa;
+        sa.sa_sigaction = mister_crash_handler;
+        sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGSEGV, &sa, NULL);
+        sigaction(SIGBUS, &sa, NULL);
+        sigaction(SIGABRT, &sa, NULL);
+    }
     setenv("SDL_VIDEODRIVER", "dummy",  1);
     setenv("SDL_AUDIODRIVER", "dummy",  1);
 #endif
