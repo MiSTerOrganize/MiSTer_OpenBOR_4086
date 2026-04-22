@@ -225,6 +225,9 @@ localparam CONF_STR = {
 	"OpenBOR_4086;;",
 	"SC0,PAK,Load PAK;",
 	"-;",
+	"O23,H Position (CRT),0,+1,+2,+3;",
+	"O9A,V Position (CRT),0,+1,+2,+3;",
+	"-;",
 	"J1,Attack,Jump,Special,Attack2,Start;",
 	"jn,A,B,X,Y,Start;",
 	"-;",
@@ -586,6 +589,8 @@ localparam lfsr_n = 63;
 wire PAL = status[4];
 wire FB  = status[5];
 wire [2:0] led = status[8:6];
+wire [1:0] h_pos = status[3:2];   // OSD H Position (CRT): 0=0, 1=+1, 2=+2, 3=+3
+wire [1:0] v_pos = status[10:9];  // OSD V Position (CRT): 0=0, 1=+1, 2=+2, 3=+3
 
 reg   [9:0] hc;
 reg   [9:0] vc;
@@ -713,13 +718,26 @@ openbor_video_top native_video
 	.audio_r        (nv_audio_r)
 );
 
+// H/V position adjustment for CRT — delay sync pulses relative to active area.
+reg [11:0] hs_delay;
+reg [3:0]  vs_delay;
+always @(posedge CLK_VIDEO) if (ce_pix_div4) begin
+    hs_delay <= {hs_delay[10:0], nv_hs};
+    vs_delay <= {vs_delay[2:0], nv_vs};
+end
+wire delayed_hs = h_pos == 2'd0 ? nv_hs :
+                  h_pos == 2'd1 ? hs_delay[3] :
+                  h_pos == 2'd2 ? hs_delay[7] :
+                                  hs_delay[11];
+wire delayed_vs = v_pos == 2'd0 ? nv_vs :
+                  v_pos == 2'd1 ? vs_delay[1] :
+                  v_pos == 2'd2 ? vs_delay[2] :
+                                  vs_delay[3];
+
 // Mux VGA outputs: native video path vs. existing menu pattern
-// When NATIVE_VID_ACTIVE, output native video timing (hs/vs/de) so the CRT
-// can lock onto valid sync immediately. Pixel data comes from nv_active
-// (frame_ready); until then, output black.
-assign VGA_DE  = NATIVE_VID_ACTIVE ? nv_de    : ~(HBlank | VBlank);
-assign VGA_HS  = NATIVE_VID_ACTIVE ? nv_hs    : HSync;
-assign VGA_VS  = NATIVE_VID_ACTIVE ? nv_vs    : VSync;
+assign VGA_DE  = NATIVE_VID_ACTIVE ? nv_de       : ~(HBlank | VBlank);
+assign VGA_HS  = NATIVE_VID_ACTIVE ? delayed_hs  : HSync;
+assign VGA_VS  = NATIVE_VID_ACTIVE ? delayed_vs  : VSync;
 assign VGA_R   = nv_active ? nv_r     : (NATIVE_VID_ACTIVE ? 8'd0 : comp_v);
 assign VGA_G   = nv_active ? nv_g     : (NATIVE_VID_ACTIVE ? 8'd0 : comp_v);
 assign VGA_B   = nv_active ? nv_b     : (NATIVE_VID_ACTIVE ? 8'd0 : comp_v);
