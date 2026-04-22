@@ -698,6 +698,10 @@ openbor_video_top native_video
 	.active         (nv_active),
 	.vsync_out      (),
 
+	// CRT position adjustment
+	.h_offset       (h_pos),
+	.v_offset       (v_pos),
+
 	// Joystick (from hps_io, written to DDR3 for ARM)
 	.joystick_0     (joystick_0),
 	.joystick_1     (joystick_1),
@@ -718,32 +722,10 @@ openbor_video_top native_video
 	.audio_r        (nv_audio_r)
 );
 
-// H/V position adjustment for CRT — delay sync pulses relative to active area.
-reg [23:0] hs_delay;
-reg [7:0]  vs_delay;
-always @(posedge CLK_VIDEO) if (ce_pix_div4) begin
-    hs_delay <= {hs_delay[22:0], nv_hs};
-    vs_delay <= {vs_delay[6:0], nv_vs};
-end
-wire delayed_hs = h_pos == 3'd0 ? nv_hs :
-                  h_pos == 3'd1 ? hs_delay[3] :
-                  h_pos == 3'd2 ? hs_delay[7] :
-                  h_pos == 3'd3 ? hs_delay[11] :
-                  h_pos == 3'd4 ? hs_delay[23] :
-                  h_pos == 3'd5 ? hs_delay[19] :
-                                  hs_delay[15];
-wire delayed_vs = v_pos == 3'd0 ? nv_vs :
-                  v_pos == 3'd1 ? vs_delay[1] :
-                  v_pos == 3'd2 ? vs_delay[2] :
-                  v_pos == 3'd3 ? vs_delay[3] :
-                  v_pos == 3'd4 ? vs_delay[7] :
-                  v_pos == 3'd5 ? vs_delay[6] :
-                                  vs_delay[5];
-
-// Mux VGA outputs: native video path vs. existing menu pattern
-assign VGA_DE  = NATIVE_VID_ACTIVE ? nv_de       : ~(HBlank | VBlank);
-assign VGA_HS  = NATIVE_VID_ACTIVE ? delayed_hs  : HSync;
-assign VGA_VS  = NATIVE_VID_ACTIVE ? delayed_vs  : VSync;
+// H/V position now handled inside timing module via FP/BP adjustment
+assign VGA_DE  = NATIVE_VID_ACTIVE ? nv_de    : ~(HBlank | VBlank);
+assign VGA_HS  = NATIVE_VID_ACTIVE ? nv_hs    : HSync;
+assign VGA_VS  = NATIVE_VID_ACTIVE ? nv_vs    : VSync;
 assign VGA_R   = nv_active ? nv_r     : (NATIVE_VID_ACTIVE ? 8'd0 : comp_v);
 assign VGA_G   = nv_active ? nv_g     : (NATIVE_VID_ACTIVE ? 8'd0 : comp_v);
 assign VGA_B   = nv_active ? nv_b     : (NATIVE_VID_ACTIVE ? 8'd0 : comp_v);

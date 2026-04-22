@@ -49,6 +49,10 @@ module openbor_video_top (
     output wire        active,        // module is outputting valid video
     output wire        vsync_out,     // active-low vsync for frame sync
 
+    // CRT position adjustment (0..6 from OSD)
+    input  wire  [2:0] h_offset,
+    input  wire  [2:0] v_offset,
+
     // Joystick (from hps_io, written to DDR3 for ARM)
     input  wire [31:0] joystick_0,
     input  wire [31:0] joystick_1,
@@ -77,10 +81,28 @@ wire [9:0]  tim_hcount;
 wire [8:0]  tim_vcount;
 wire        tim_new_frame, tim_new_line;
 
+// Convert OSD 3-bit (0..6) to signed adjustment
+wire signed [3:0] h_adj = (h_offset == 3'd0) ?  4'sd0 :
+                          (h_offset == 3'd1) ?  4'sd4 :
+                          (h_offset == 3'd2) ?  4'sd8 :
+                          (h_offset == 3'd3) ?  4'sd12 :
+                          (h_offset == 3'd4) ? -4'sd12 :
+                          (h_offset == 3'd5) ? -4'sd8 :
+                                               -4'sd4;
+wire signed [3:0] v_adj = (v_offset == 3'd0) ?  4'sd0 :
+                          (v_offset == 3'd1) ?  4'sd1 :
+                          (v_offset == 3'd2) ?  4'sd2 :
+                          (v_offset == 3'd3) ?  4'sd3 :
+                          (v_offset == 3'd4) ? -4'sd3 :
+                          (v_offset == 3'd5) ? -4'sd2 :
+                                               -4'sd1;
+
 openbor_video_timing timing (
     .clk       (clk_vid),
     .ce_pix    (ce_pix),
     .reset     (reset),
+    .h_adj     (h_adj),
+    .v_adj     (v_adj),
     .hsync     (tim_hsync),
     .vsync     (tim_vsync),
     .hblank    (tim_hblank),

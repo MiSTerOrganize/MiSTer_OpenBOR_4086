@@ -29,6 +29,10 @@ module openbor_video_timing (
     input  wire        ce_pix,     // pixel enable (divide-by-4 = 7.8125 MHz)
     input  wire        reset,
 
+    // CRT position offset (signed: -3 to +3, from OSD)
+    input  wire signed [3:0] h_adj,  // horizontal: positive = shift right
+    input  wire signed [3:0] v_adj,  // vertical: positive = shift down
+
     output reg         hsync,      // active low
     output reg         vsync,      // active low
     output reg         hblank,
@@ -42,13 +46,12 @@ module openbor_video_timing (
 
 // -- Timing constants --------------------------------------------------
 // 320x240 active, centered for 15kHz CRT, NTSC-compatible H rate.
-// Wider H_BP than PICO-8's 256x256 modeline to keep H_TOTAL at 500
-// (preserves the 15,625 Hz horizontal frequency).
+// CRT-compatible blanking with balanced porches.
 localparam H_ACTIVE = 320;
-localparam H_FP     = 20;
-localparam H_SYNC   = 38;
-localparam H_BP     = 122;
-localparam H_TOTAL  = 500;   // 320+20+38+122
+localparam H_FP     = 36;
+localparam H_SYNC   = 32;
+localparam H_BP     = 112;
+localparam H_TOTAL  = 500;   // 320+36+32+112
 
 localparam V_ACTIVE = 240;
 localparam V_FP     = 2;
@@ -56,11 +59,11 @@ localparam V_SYNC   = 3;
 localparam V_BP     = 18;
 localparam V_TOTAL  = 263;   // 240+2+3+18
 
-// Derived boundaries
-localparam H_SYNC_START = H_ACTIVE + H_FP;        // 340
-localparam H_SYNC_END   = H_SYNC_START + H_SYNC;  // 378
-localparam V_SYNC_START = V_ACTIVE + V_FP;        // 242
-localparam V_SYNC_END   = V_SYNC_START + V_SYNC;  // 245
+// Derived boundaries — adjusted by OSD H/V position offset.
+wire [9:0] h_sync_start = H_ACTIVE + H_FP + {{6{h_adj[3]}}, h_adj};
+wire [9:0] h_sync_end   = h_sync_start + H_SYNC;
+wire [8:0] v_sync_start = V_ACTIVE + V_FP + {{5{v_adj[3]}}, v_adj};
+wire [8:0] v_sync_end   = v_sync_start + V_SYNC;
 
 always @(posedge clk) begin
     if (reset) begin
@@ -97,9 +100,9 @@ always @(posedge clk) begin
             hblank <= 1'b0;
 
         // Horizontal sync (active low)
-        if (hcount == H_SYNC_START - 1)
+        if (hcount == h_sync_start - 1)
             hsync <= 1'b0;
-        else if (hcount == H_SYNC_END - 1)
+        else if (hcount == h_sync_end - 1)
             hsync <= 1'b1;
 
         // Vertical blanking (transitions on line boundaries)
@@ -112,9 +115,9 @@ always @(posedge clk) begin
 
         // Vertical sync (active low)
         if (hcount == H_TOTAL - 1) begin
-            if (vcount == V_SYNC_START - 1)
+            if (vcount == v_sync_start - 1)
                 vsync <= 1'b0;
-            else if (vcount == V_SYNC_END - 1)
+            else if (vcount == v_sync_end - 1)
                 vsync <= 1'b1;
         end
 
