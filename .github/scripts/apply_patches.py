@@ -259,12 +259,12 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     # OpenBOR's logsDir global defaults to "Logs" — change at compile time
     # so it creates and writes to the correct location directly.
     print("Patching logsDir default...")
-    openbor_c = read(os.path.join(obor, 'source/openbor.c'))
+    openbor_c = read(os.path.join(obor, 'openbor.c'))
     logs_old = 'char logsDir[256] = "Logs"'
     logs_new = '#ifdef MISTER_NATIVE_VIDEO\nchar logsDir[256] = "/media/fat/logs/OpenBOR_4086"\n#else\nchar logsDir[256] = "Logs"\n#endif'
     if logs_old in openbor_c:
         openbor_c = openbor_c.replace(logs_old, logs_new, 1)
-        write(os.path.join(obor, 'source/openbor.c'), openbor_c)
+        write(os.path.join(obor, 'openbor.c'), openbor_c)
         print("  logsDir default changed to /media/fat/logs/OpenBOR_4086")
     else:
         print("  WARN: logsDir pattern not found — trying alternative")
@@ -273,7 +273,7 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
             if alt in openbor_c:
                 alt_new = alt.replace('"Logs"', '"/media/fat/logs/OpenBOR_4086"')
                 openbor_c = openbor_c.replace(alt, '#ifdef MISTER_NATIVE_VIDEO\n' + alt_new + '\n#else\n' + alt + '\n#endif', 1)
-                write(os.path.join(obor, 'source/openbor.c'), openbor_c)
+                write(os.path.join(obor, 'openbor.c'), openbor_c)
                 print(f"  logsDir patched via alternative: {alt}")
                 break
         else:
