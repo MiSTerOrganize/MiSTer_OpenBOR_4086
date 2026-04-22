@@ -277,6 +277,10 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
                 print(f"  logsDir patched via alternative: {alt}")
                 break
         else:
+            # Debug: show what the actual declaration looks like
+            for line in openbor_c.split('\n'):
+                if 'logsDir' in line and '=' in line:
+                    print(f"  DEBUG: found logsDir line: {repr(line.strip())}")
             print("  WARN: could not find logsDir declaration")
 
     # -- 7. Replace sdl/sblaster.c with MiSTer DDR3 audio backend --------
