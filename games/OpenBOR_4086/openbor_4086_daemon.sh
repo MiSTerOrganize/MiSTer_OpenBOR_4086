@@ -54,6 +54,10 @@ while true; do
         # Without this, repeated PAK loads exhaust RAM and OpenBOR segfaults.
         echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
         mkdir -p /media/fat/logs/OpenBOR_4086
+        # Symlink Logs → /media/fat/logs/ so OpenBOR's internal logsDir
+        # writes to the correct location instead of creating ./Logs/
+        rm -rf "$GAMEDIR/Logs"
+        ln -sf /media/fat/logs/OpenBOR_4086 "$GAMEDIR/Logs"
         mv -f /media/fat/logs/OpenBOR_4086/OpenBOR.log /media/fat/logs/OpenBOR_4086/OpenBOR.prev.log 2>/dev/null
         ./OpenBOR > /media/fat/logs/OpenBOR_4086/OpenBOR.log 2>&1 &
         CHILD=$!
