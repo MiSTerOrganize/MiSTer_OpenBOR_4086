@@ -241,6 +241,10 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     do { \\
         if (strcmp(name, "Saves") == 0) { \\
             strcpy(buf, "/media/fat/saves/OpenBOR_4086/"); \\
+        } else if (strcmp(name, "SaveStates") == 0) { \\
+            strcpy(buf, "/media/fat/savestates/OpenBOR_4086/"); \\
+        } else if (strcmp(name, "Config") == 0) { \\
+            strcpy(buf, "/media/fat/config/"); \\
         } else if (strcmp(name, "Logs") == 0) { \\
             strcpy(buf, "/media/fat/logs/OpenBOR_4086/"); \\
         } else { \\
@@ -254,6 +258,46 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     src = src.replace(old_macro, new_macro)
     write(os.path.join(obor, 'source/utils.c'), src)
     print("  Save path redirected.")
+
+    # ── 6c. Patch openbor.c — route .cfg/.hi to Config, .s00 to SaveStates ──
+    print("Patching openbor.c (split save directories)...")
+    obor_c = read(os.path.join(obor, 'openbor.c'))
+
+    # .cfg files: savesettings/loadsettings → "Config"
+    # These have: getBasePath(path, "Saves", 0); getPakName(tmpname, 4);
+    obor_c = obor_c.replace(
+        'getBasePath(path, "Saves", 0);\n    getPakName(tmpname, 4);',
+        '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "Config", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    getPakName(tmpname, 4);'
+    )
+
+    # default.cfg: saveasdefault/loadfromdefault → "Config"
+    # These have: getBasePath(path, "Saves", 0); strncat(path, "default.cfg", 128);
+    obor_c = obor_c.replace(
+        'getBasePath(path, "Saves", 0);\n    strncat(path, "default.cfg", 128);',
+        '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "Config", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    strncat(path, "default.cfg", 128);'
+    )
+
+    # .hi files: saveHighScoreFile/loadHighScoreFile → "Config"
+    # These have: getBasePath(path, "Saves", 0); getPakName(tmpname, 1);
+    obor_c = obor_c.replace(
+        'getBasePath(path, "Saves", 0);\n    getPakName(tmpname, 1);',
+        '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "Config", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    getPakName(tmpname, 1);'
+    )
+
+    # .s00 save states: saveScriptFile/loadScriptFile → "SaveStates"
+    # These have: getBasePath(path, "Saves", 0); getPakName(tmpvalue, 2);//.scr
+    obor_c = obor_c.replace(
+        'getBasePath(path, "Saves", 0);\n    getPakName(tmpvalue, 2);//.scr',
+        '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "SaveStates", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    getPakName(tmpvalue, 2);//.scr'
+    )
+    # loadScriptFile uses tmpname instead of tmpvalue
+    obor_c = obor_c.replace(
+        'getBasePath(path, "Saves", 0);\n    getPakName(tmpname, 2);//.scr',
+        '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "SaveStates", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    getPakName(tmpname, 2);//.scr'
+    )
+
+    write(os.path.join(obor, 'openbor.c'), obor_c)
+    print("  .cfg/.hi → /media/fat/config/, .s00 → /media/fat/savestates/OpenBOR_4086/")
 
     # ── 6b. Patch logsDir default to /media/fat/logs/OpenBOR_4086 ────
     # logsDir is declared in sdl/sdlport.c as: char logsDir[128] = {"Logs"};

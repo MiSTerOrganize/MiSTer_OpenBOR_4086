@@ -35,6 +35,8 @@ mkdir -p /media/fat/_Other
 mkdir -p /media/fat/games/OpenBOR_4086/Paks
 mkdir -p /media/fat/logs/OpenBOR_4086
 mkdir -p /media/fat/saves/OpenBOR_4086
+mkdir -p /media/fat/savestates/OpenBOR_4086
+mkdir -p /media/fat/config
 mkdir -p /media/fat/config/inputs
 mkdir -p /media/fat/docs/OpenBOR_4086
 

@@ -173,9 +173,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "NativeAudioWriter: init failed, audio will be silent\n");
     }
 
-    /* Create MiSTer save directory */
+    /* Create MiSTer directories */
     mkdir("/media/fat/saves", 0755);
     mkdir("/media/fat/saves/OpenBOR_4086", 0755);
+    mkdir("/media/fat/savestates", 0755);
+    mkdir("/media/fat/savestates/OpenBOR_4086", 0755);
+    mkdir("/media/fat/config", 0755);
 #endif
 
     packfile_mode(0);
