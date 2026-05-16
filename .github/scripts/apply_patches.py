@@ -398,41 +398,25 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     write(pf_path, pf)
     print(f"  {applied}/{len(fixes)} blend R/B fixes applied.")
 
-    # ── 10. Audio Stage 1: force 48kHz native (sample reads use UPSTREAM
-    #                       nearest-neighbor — no Hermite substitution).
+    # ── 10. Audio Stage 1: NO PATCH (Option C v2, 2026-05-15 evening).
     #
-    # Force playfrequency = 48000. Upstream af23dc9c uses user-configurable
-    # rate from savedata.soundrate (default 44100). Our sblaster_patch.c
-    # submits to the DDR3 ring at 48 kHz pace regardless, so without this
-    # override every PAK plays +0.88 semitone sharp (~8.8% too fast).
-    # Force-override just before SB_playstart() so the upstream mixer's
-    # per-sample rate math uses 48000 too.
+    # Engine runs at UPSTREAM NATIVE 44.1 kHz (Sega CD Red Book CDDA rate).
+    # Sample reads use upstream FIX_TO_INT(fp_pos) nearest-neighbor.
+    # Our sblaster_patch.c glue layer handles 44.1 → 48 kHz conversion via
+    # linear interpolation before DDR3 submission — same architectural
+    # pattern as PICO-8. Matches the NTSC-region-match rule.
     #
-    # HISTORY (2026-05-15): Earlier patches replaced the three sample-read
-    # sites with cubic Hermite / linear interpolation per the audio quality
-    # ladder. User A/B revealed cubic Hermite overshoot amplified per-voice
-    # peak amplitude, causing mixbuf clipping at the engine's hard 0xffff
-    # ceiling when many voices played simultaneously (multi-enemy specials).
-    # Reverted to upstream FIX_TO_INT(fp_pos) nearest-neighbor reads per
-    # user direction. See feedback_cubic_overshoot_8bit_crackle.md.
-    print("Patching source/gamelib/soundmix.c (force 48kHz; sample reads = upstream nearest-neighbor)...")
+    # HISTORY:
+    #   2026-05-15 (morning): force-48-kHz patch (Option A) killed pitch
+    #     shift but diverged from Sega CD's native rate.
+    #   2026-05-15 (afternoon): Option C v1 cubic Hermite failed with
+    #     "constant per Stage 2 tick" buzz.
+    #   2026-05-15 (evening): Option C v2 — engine at 44.1k native, LINEAR
+    #     resample in glue. Force-48-kHz patch REMOVED.
+    print("Step 10 (audio): NO PATCH — engine at upstream native 44.1 kHz,")
+    print("                  glue layer (sblaster_patch.c) resamples 44.1 → 48 kHz.")
     sm_path = os.path.join(obor, 'source/gamelib/soundmix.c')
     sm = read(sm_path)
-
-    # 10a — force playfrequency = 48000, playbits = 16 right before
-    #       SB_playstart() so it overrides every prior code-path assignment.
-    fr_old = '    if(!SB_playstart(playbits, playfrequency))'
-    fr_new = ('    /* MiSTer: force 48 kHz / 16-bit output to match FPGA audio rate.\n'
-              '     * Kills the +0.88 semitone pitch shift from rate mismatch with\n'
-              '     * sblaster_patch.c which submits the DDR3 ring at 48 kHz pace. */\n'
-              '    playfrequency = 48000;\n'
-              '    playbits = 16;\n'
-              '    if(!SB_playstart(playbits, playfrequency))')
-    if fr_old in sm:
-        sm = sm.replace(fr_old, fr_new, 1)
-        print("  Audio output rate forced to 48000 Hz / 16-bit.")
-    else:
-        print("  WARN: SB_playstart anchor not found — playfrequency override skipped")
 
     # NOTE: Stage 1 Hermite/linear sample-read substitutions REMOVED 2026-05-15.
     # Reverted to upstream FIX_TO_INT(fp_pos) nearest-neighbor reads after
