@@ -413,20 +413,66 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     #     "constant per Stage 2 tick" buzz.
     #   2026-05-15 (evening): Option C v2 — engine at 44.1k native, LINEAR
     #     resample in glue. Force-48-kHz patch REMOVED.
-    print("Step 10 (audio): NO PATCH — engine at upstream native 44.1 kHz,")
-    print("                  glue layer (sblaster_patch.c) resamples 44.1 → 48 kHz.")
+    print("Step 10 (audio): soft-clip patch in update_sample()")
+    print("                  engine at upstream native 44.1 kHz; glue layer = zero-order hold (SDL 1.2 PC ref).")
     sm_path = os.path.join(obor, 'source/gamelib/soundmix.c')
     sm = read(sm_path)
 
-    # NOTE: Stage 1 Hermite/linear sample-read substitutions REMOVED 2026-05-15.
-    # Reverted to upstream FIX_TO_INT(fp_pos) nearest-neighbor reads after
-    # user reported cubic-overshoot-induced clipping crackles on multi-
-    # enemy special moves (mixbuf sum exceeded 0xffff ceiling when many
-    # cubic-amplified voices summed simultaneously). This matches the
-    # engine's native sample-reading behavior on every upstream platform.
+    # Sample reads: upstream FIX_TO_INT(fp_pos) nearest-neighbor preserved
+    # (engine-internal Stage 1).
+
+    # Soft-clip patch for update_sample() 16-bit output branch — MIRRORED FROM
+    # MiSTer_OpenBOR_7533 (same engine, same multi-voice-sum clip behavior).
+    # Marvel vs Capcom heavy gameplay produces mixbuf[i] sums exceeding
+    # [-32768, 32767]; upstream hard-clamps → continuous "buzz" distortion +
+    # intermittent silence. Quadratic-taper soft clip below.
+    #
+    # • Below ±24576 (75% of int16 range): linear pass-through (no cost)
+    # • Above ±24576: quadratic taper to ±32767 asymptote
+    # • taper(excess) = 8191 * excess / (excess + 16382) ≤ 8191
+    OLD_CLIP = (
+        '        unsigned short *dst = (unsigned short *)buf;\n'
+        '        for(i = 0; i < todo; i++)\n'
+        '        {\n'
+        '            u = mixbuf[i] >> MIXSHIFT;\n'
+        '            if (u < 0)\n'
+        '            {\n'
+        '                u = 0;\n'
+        '            }\n'
+        '            else if (u > 0xffff)\n'
+        '            {\n'
+        '                u = 0xffff;\n'
+        '            }\n'
+        '            u ^= 0x8000;\n'
+        '            dst[i] = u;\n'
+        '        }\n'
+    )
+    NEW_CLIP = (
+        '        /* MiSTer Frontier: soft-clip replaces hard int16 saturation. */\n'
+        '        unsigned short *dst = (unsigned short *)buf;\n'
+        '        for(i = 0; i < todo; i++)\n'
+        '        {\n'
+        '            int _s = (int)(mixbuf[i] >> MIXSHIFT) - 0x8000;\n'
+        '            int _a = _s < 0 ? -_s : _s;\n'
+        '            int _sign = _s < 0 ? -1 : 1;\n'
+        '            if (_a > 24576)\n'
+        '            {\n'
+        '                int _excess = _a - 24576;\n'
+        '                _a = 24576 + (8191 * _excess) / (_excess + 16382);\n'
+        '            }\n'
+        '            _s = _sign * _a;\n'
+        '            if (_s > 32767)  _s = 32767;\n'
+        '            if (_s < -32768) _s = -32768;\n'
+        '            u = (unsigned int)(_s + 0x8000);\n'
+        '            dst[i] = u;\n'
+        '        }\n'
+    )
+    if OLD_CLIP not in sm:
+        raise RuntimeError("soundmix.c: 16-bit hard-clip block not found (upstream changed?)")
+    sm = sm.replace(OLD_CLIP, NEW_CLIP)
 
     write(sm_path, sm)
-    print("  soundmix.c patched (48kHz native; sample reads = upstream nearest-neighbor).")
+    print("  soundmix.c patched (48kHz native; sample reads = upstream nearest-neighbor; soft-clip in update_sample).")
 
     print("\nAll patches applied successfully.")
 
