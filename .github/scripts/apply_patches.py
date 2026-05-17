@@ -413,18 +413,75 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     #     "constant per Stage 2 tick" buzz.
     #   2026-05-15 (evening): Option C v2 — engine at 44.1k native, LINEAR
     #     resample in glue. Force-48-kHz patch REMOVED.
-    print("Step 10 (audio): NO PATCH — engine at upstream native 44.1 kHz")
-    print("                  Clip control moved to glue-layer soft-limiter (post-zero-order-hold resample).")
+    print("Step 10 (audio): diagnostic-only patch in update_sample() (mirror from 7533)")
+    print("                  Logs silent-window transitions to isolate task #10 cutout root cause.")
     sm_path = os.path.join(obor, 'source/gamelib/soundmix.c')
     sm = read(sm_path)
 
-    # Engine mixer left at upstream behavior — matches PC reference exactly.
-    # Multi-voice overflow handled at the glue layer (sblaster_patch.c) with
-    # envelope-following soft-limiter applied after resample. See 7533
-    # apply_patches.py step 10 for the architecture rationale.
+    # DIAGNOSTIC patch — task #10 investigation. See 7533 apply_patches.py
+    # step 10 for full rationale. Transition-only logger; fires at most
+    # twice per silent window. Helps identify whether cutout is caused by:
+    #   • All voices going active=0 (engine stopped voices)
+    #   • Voices active=1 but contributing zero (playback state bug)
+    #   • Music inactive/paused (music dispatch failure)
+    OLD_SETUP = (
+        '    clearmixbuffer((unsigned int *)mixbuf, todo);\n'
+        '    mixaudio(todo);\n'
+        '    samplesplayed += (todo >> 1);\n'
+    )
+    NEW_SETUP = (
+        '    clearmixbuffer((unsigned int *)mixbuf, todo);\n'
+        '    mixaudio(todo);\n'
+        '    samplesplayed += (todo >> 1);\n'
+        '\n'
+        '    /* MiSTer Frontier task #10 diagnostic — transition-only logger. */\n'
+        '    {\n'
+        '        static int _mf_was_silent = 0;\n'
+        '        static int _mf_silent_ticks = 0;\n'
+        '        int _mf_any_nonzero = 0;\n'
+        '        int _mf_j;\n'
+        '        for (_mf_j = 0; _mf_j < (int)todo; _mf_j++) {\n'
+        '            if (mixbuf[_mf_j] != 0) { _mf_any_nonzero = 1; break; }\n'
+        '        }\n'
+        '        if (!_mf_any_nonzero) {\n'
+        '            _mf_silent_ticks++;\n'
+        '            if (!_mf_was_silent) {\n'
+        '                int _mf_active = 0, _mf_kk;\n'
+        '                for (_mf_kk = 0; _mf_kk < max_channels; _mf_kk++)\n'
+        '                    if (vchannel[_mf_kk].active) _mf_active++;\n'
+        '                fprintf(stderr,\n'
+        '                    "[sm-silent] START music.active=%d music.paused=%d active_sfx=%d max_ch=%d\\n",\n'
+        '                    musicchannel.active, musicchannel.paused,\n'
+        '                    _mf_active, max_channels);\n'
+        '                fflush(stderr);\n'
+        '                _mf_was_silent = 1;\n'
+        '            }\n'
+        '        } else if (_mf_was_silent) {\n'
+        '            int _mf_active = 0, _mf_kk;\n'
+        '            for (_mf_kk = 0; _mf_kk < max_channels; _mf_kk++)\n'
+        '                if (vchannel[_mf_kk].active) _mf_active++;\n'
+        '            fprintf(stderr,\n'
+        '                "[sm-silent] END   music.active=%d music.paused=%d active_sfx=%d ticks=%d\\n",\n'
+        '                musicchannel.active, musicchannel.paused,\n'
+        '                _mf_active, _mf_silent_ticks);\n'
+        '            fflush(stderr);\n'
+        '            _mf_was_silent = 0;\n'
+        '            _mf_silent_ticks = 0;\n'
+        '        }\n'
+        '    }\n'
+    )
+    if OLD_SETUP not in sm:
+        raise RuntimeError("soundmix.c: update_sample() setup block not found (upstream changed?)")
+    sm = sm.replace(OLD_SETUP, NEW_SETUP)
+
+    if '#include <stdio.h>' not in sm:
+        first_inc = sm.find('#include')
+        if first_inc != -1:
+            line_end = sm.find('\n', first_inc) + 1
+            sm = sm[:line_end] + '#include <stdio.h>\n' + sm[line_end:]
 
     write(sm_path, sm)
-    print("  soundmix.c left unmodified (upstream behavior preserved; clip control in glue layer).")
+    print("  soundmix.c patched (diagnostic transition logger in update_sample).")
 
     print("\nAll patches applied successfully.")
 
