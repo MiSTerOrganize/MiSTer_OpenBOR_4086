@@ -413,10 +413,37 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     #     "constant per Stage 2 tick" buzz.
     #   2026-05-15 (evening): Option C v2 — engine at 44.1k native, LINEAR
     #     resample in glue. Force-48-kHz patch REMOVED.
-    print("Step 10 (audio): diagnostic-only patch in update_sample() (mirror from 7533)")
-    print("                  Logs silent-window transitions to isolate task #10 cutout root cause.")
+    print("Step 10 (audio): soundcache-reload patch in mixaudio() (mirror from 7533)")
+    print("                  Fixes heavy-scene silent cutout (regression vs Build 3366).")
     sm_path = os.path.join(obor, 'source/gamelib/soundmix.c')
     sm = read(sm_path)
+
+    # FIX for task #10 — mirror from MiSTer_OpenBOR_7533. Same engine,
+    # same NULL-deactivate regression vs Build 3366. See 7533 commit for
+    # full rationale (PC 3366 plays MvC perfectly, PC 7533 cuts out).
+    # Fix: lazy-reload via sound_reload_sample before deactivating.
+    OLD_NULL_CHECK = (
+        '            if(!soundcache[snum].sample.sampleptr)\n'
+        '            {\n'
+        '                vchannel[chan].active = 0;\n'
+        '                continue;\n'
+        '            }\n'
+    )
+    NEW_NULL_CHECK = (
+        '            if(!soundcache[snum].sample.sampleptr)\n'
+        '            {\n'
+        '                /* MiSTer Frontier task #10 fix: lazy-reload evicted samples. */\n'
+        '                sound_reload_sample(snum);\n'
+        '                if(!soundcache[snum].sample.sampleptr)\n'
+        '                {\n'
+        '                    vchannel[chan].active = 0;\n'
+        '                    continue;\n'
+        '                }\n'
+        '            }\n'
+    )
+    if OLD_NULL_CHECK not in sm:
+        raise RuntimeError("soundmix.c: mixaudio() null-check block not found (upstream changed?)")
+    sm = sm.replace(OLD_NULL_CHECK, NEW_NULL_CHECK)
 
     # DIAGNOSTIC patch — task #10 investigation. See 7533 apply_patches.py
     # step 10 for full rationale. Transition-only logger; fires at most
