@@ -2,11 +2,12 @@
 //
 //  OpenBOR Native Video DDR3 Reader
 //
-//  Reads 320x240 RGB565 frames from DDR3 and outputs them 1:1 (no scaling).
+//  Reads 320x224 RGB565 frames from DDR3 and outputs them 1:1 (no scaling).
 //
-//  OpenBOR's software render path produces 320x240 pixels natively, so we
-//  do not need pixel doubling or line doubling like the PICO-8 reader does.
-//  This simplifies the pixel output state machine considerably.
+//  OpenBOR's software render path produces frames at PAK-native dimensions
+//  (320x240 4086-era, 480x272 widescreen, etc.) which patch_sdl_dummy.py
+//  bilinear-squishes to 320x224 before DDR3 write. This V_ACTIVE matches
+//  Sega CD NTSC V28 region exactly (V_TOTAL=262, 59.92 Hz).
 //
 //  Cart loading via ioctl is PRESERVED from the PICO-8 design — PAKs are
 //  loaded via the MiSTer OSD file browser exactly the way PICO-8 cartridges
@@ -22,8 +23,8 @@
 //    0x3A000000 + 0x028     : Joystick P4
 //    0x3A000000 + 0x030     : Audio ring write pointer (ARM writes)
 //    0x3A000000 + 0x038     : Audio ring read pointer  (FPGA writes)
-//    0x3A000000 + 0x040     : Buffer 0 (320x240 RGB565 = 153,600 bytes; 256KB region)
-//    0x3A040040             : Buffer 1 (320x240 RGB565; 256KB region)
+//    0x3A000000 + 0x040     : Buffer 0 (320x224 RGB565 = 143,360 bytes; 256KB region)
+//    0x3A040040             : Buffer 1 (320x224 RGB565; 256KB region)
 //    0x3A080000             : Cart data buffer (past video buffers)
 //    0x3A0D0000             : Audio ring buffer (64 KiB, 16,384 stereo S16 frames)
 //
@@ -95,7 +96,7 @@ assign ddr_be  = 8'hFF;
 // -- DDR3 Address Constants --------------------------------------------
 // 29-bit qword addresses = physical >> 3
 //
-// Buffer layout: 320*240*2 = 153,600 bytes per buffer.
+// Buffer layout: 320*224*2 = 143,360 bytes per buffer.
 // Round up to 256KB per buffer for clean addressing and headroom.
 // 256KB = 0x40000 bytes = 0x8000 qwords.
 //
@@ -110,8 +111,8 @@ assign ddr_be  = 8'hFF;
 //   0x3A040040        29'h07408008       Buffer 1 base
 //   0x3A080000        29'h07410000       Cart data buffer (past video buffers)
 //
-// Each buffer holds 240 lines × 320 pixels × 2 bytes = 153,600 bytes
-// = 19,200 qwords. The next buffer starts 256KB later (0x40000 bytes
+// Each buffer holds 224 lines × 320 pixels × 2 bytes = 143,360 bytes
+// = 17,920 qwords. The next buffer starts 256KB later (0x40000 bytes
 // = 0x8000 qwords) leaving plenty of headroom. Cart data lives well
 // past the end of BUF1 to allow hot-swap during gameplay without overlap.
 localparam [28:0] CTRL_ADDR      = 29'h07400000;  // 0x3A000000 >> 3
@@ -138,7 +139,7 @@ localparam [7:0]  LINE_BURST   = 8'd80;
 // Each scanline takes 80 qword addresses
 localparam [28:0] LINE_STRIDE  = 29'd80;
 // Display lines (no doubling — source = display)
-localparam [8:0]  V_ACTIVE     = 9'd240;
+localparam [8:0]  V_ACTIVE     = 9'd224;
 
 localparam [19:0] TIMEOUT_MAX = 20'hF_FFFF;
 

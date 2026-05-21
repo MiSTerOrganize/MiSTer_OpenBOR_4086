@@ -37,7 +37,7 @@ INJECT_INCLUDES = """
 #define MISTER_BUF0_OFFSET     0x00000040u
 #define MISTER_BUF1_OFFSET     0x00040040u
 #define MISTER_FRAME_W         320
-#define MISTER_FRAME_H         240
+#define MISTER_FRAME_H         224  /* Sega CD V28 NTSC */
 #define MISTER_FRAME_BYTES     (MISTER_FRAME_W * MISTER_FRAME_H * 2)
 
 static int                 mister_fd        = -1;
@@ -48,9 +48,6 @@ static int                 mister_active_buf = 0;
 static int                 mister_logged    = 0;
 static pthread_t           mister_keepalive_tid;
 static volatile int        mister_keepalive_run = 0;
-/* Every MISTER_SAMPLE_EVERY frames, dump a 4x4 grid of sample pixel
- * values so we can inspect actual colours after OpenBOR + SDL ran. */
-#define MISTER_SAMPLE_EVERY 120   /* ~2 seconds at 60 fps */
 
 /* Keepalive thread -- pings the FPGA frame counter every ~150ms even
  * when ARM isn't producing frames. The FPGA video reader
@@ -122,28 +119,23 @@ static void mister_present(SDL_Surface *screen) {
     int Bloss  = screen->format->Bloss;
     SDL_Palette *pal = screen->format->palette;
 
-    /* Scale to fit entirely within 320x240, no cropping.
-     * Use the larger axis ratio so everything fits.
-     * 640x480 -> /2 -> 320x240, 480x272 -> /1.5 -> 320x181
-     * Output is centered vertically with black bars if needed.
-     * Fixed-point: multiply by 256 to avoid floating point. */
-    int scale256 = 256; /* 256 = 1.0x */
-    if (w > MISTER_FRAME_W || h > MISTER_FRAME_H) {
-        int sx256 = (w * 256 + MISTER_FRAME_W - 1) / MISTER_FRAME_W;
-        int sy256 = (h * 256 + MISTER_FRAME_H - 1) / MISTER_FRAME_H;
-        scale256 = sx256 > sy256 ? sx256 : sy256; /* use larger to fit both */
-    }
-    int out_w = (w * 256) / scale256;
-    int out_h = (h * 256) / scale256;
-    if (out_w > MISTER_FRAME_W) out_w = MISTER_FRAME_W;
-    if (out_h > MISTER_FRAME_H) out_h = MISTER_FRAME_H;
-    int dst_y0 = (MISTER_FRAME_H - out_h) / 2; /* vertical centering */
+    /* Anisotropic squish: fill entire 320x224 dest, X and Y scaled
+     * independently. PAK content authored at non-224 native heights
+     * (320x240 4086-era ~7% Y compress, 480x272 X+Y compress, 960x480
+     * huge downscale) maps to fill the Sega CD V28 NTSC active area
+     * exactly. Aspect distortion is intentional — matches Sega CD
+     * displayed area edge-to-edge, no letterbox. Mirror of 7533. */
+    int sx256 = (w * 256) / MISTER_FRAME_W;
+    int sy256 = (h * 256) / MISTER_FRAME_H;
+    int out_w = MISTER_FRAME_W;
+    int out_h = MISTER_FRAME_H;
+    int dst_y0 = 0;
 
     if (!mister_logged) {
         fprintf(stderr, "MiSTer SDL: first present %dx%d bpp=%d pitch=%d "
-                "scale256=%d -> %dx%d dst_y0=%d "
+                "sx256=%d sy256=%d -> %dx%d "
                 "Rmask=0x%08X Gmask=0x%08X Bmask=0x%08X palette=%p\\n",
-                w, h, bpp, pitch, scale256, out_w, out_h, dst_y0,
+                w, h, bpp, pitch, sx256, sy256, out_w, out_h,
                 screen->format->Rmask, screen->format->Gmask,
                 screen->format->Bmask, pal);
         mister_logged = 1;
@@ -169,11 +161,11 @@ static void mister_present(SDL_Surface *screen) {
 
     if (bpp == 32) {
         for (int y = 0; y < out_h; y++) {
-            int src_y = (y * scale256) / 256;
+            int src_y = (y * sy256) / 256;
             const uint32_t *row = (const uint32_t *)(rows + src_y * pitch);
             volatile uint16_t *out_row = dst + (dst_y0 + y) * MISTER_FRAME_W;
             for (int x = 0; x < out_w; x++) {
-                int src_x = (x * scale256) / 256;
+                int src_x = (x * sx256) / 256;
                 uint32_t px = row[src_x];
                 uint8_t r = ((px & screen->format->Rmask) >> Rshift) << Rloss;
                 uint8_t g = ((px & screen->format->Gmask) >> Gshift) << Gloss;
@@ -184,11 +176,11 @@ static void mister_present(SDL_Surface *screen) {
     }
     else if (bpp == 16) {
         for (int y = 0; y < out_h; y++) {
-            int src_y = (y * scale256) / 256;
+            int src_y = (y * sy256) / 256;
             const uint16_t *row = (const uint16_t *)(rows + src_y * pitch);
             volatile uint16_t *out_row = dst + (dst_y0 + y) * MISTER_FRAME_W;
             for (int x = 0; x < out_w; x++) {
-                int src_x = (x * scale256) / 256;
+                int src_x = (x * sx256) / 256;
                 uint16_t px = row[src_x];
                 uint8_t r = ((px & screen->format->Rmask) >> Rshift) << Rloss;
                 uint8_t g = ((px & screen->format->Gmask) >> Gshift) << Gloss;
@@ -199,11 +191,11 @@ static void mister_present(SDL_Surface *screen) {
     }
     else if (bpp == 8 && pal) {
         for (int y = 0; y < out_h; y++) {
-            int src_y = (y * scale256) / 256;
+            int src_y = (y * sy256) / 256;
             const uint8_t *row = rows + src_y * pitch;
             volatile uint16_t *out_row = dst + (dst_y0 + y) * MISTER_FRAME_W;
             for (int x = 0; x < out_w; x++) {
-                int src_x = (x * scale256) / 256;
+                int src_x = (x * sx256) / 256;
                 SDL_Color c = pal->colors[row[src_x]];
                 out_row[x] = ((c.r >> 3) << 11) | ((c.g >> 2) << 5) | (c.b >> 3);
             }
@@ -213,99 +205,9 @@ static void mister_present(SDL_Surface *screen) {
         return;
     }
 
-    /* Periodically dump a grid of sample pixels. Lets us see actual
-     * colour values after OpenBOR + SDL ran, for comparing against
-     * the expected on-screen colours. */
-    if (bpp == 32 && (mister_frame_cnt % MISTER_SAMPLE_EVERY) == 0) {
-        const uint32_t *rows = (const uint32_t *)screen->pixels;
-        int pitch_w = pitch / 4;
-        fprintf(stderr, "MiSTer SDL sample (frame %u):\\n", mister_frame_cnt);
-        for (int gy = 0; gy < 3; gy++) {
-            int sy = (h * (gy * 2 + 1)) / 6;
-            for (int gx = 0; gx < 4; gx++) {
-                int sx = (w * (gx * 2 + 1)) / 8;
-                uint32_t px = rows[sy * pitch_w + sx];
-                uint8_t r = ((px & screen->format->Rmask) >> Rshift) << Rloss;
-                uint8_t g = ((px & screen->format->Gmask) >> Gshift) << Gloss;
-                uint8_t b = ((px & screen->format->Bmask) >> Bshift) << Bloss;
-                fprintf(stderr, "  (%3d,%3d) raw=0x%08X r=%02X g=%02X b=%02X\\n",
-                        sx, sy, px, r, g, b);
-            }
-        }
-        fflush(stderr);
-    }
-
     mister_frame_cnt++;
     *mister_ctrl = (mister_frame_cnt << 2) | (mister_active_buf & 1);
     mister_active_buf ^= 1;
-
-    /* DIAGNOSTIC: continuous frame capture for palette debug.
-     * Writes SDL surface as RGB888 PPM to /media/fat/logs/OpenBOR_4086/
-     * captures/cap_NNN.ppm every 120 frames (2s @ 60fps), up to 600
-     * captures = 20 minutes of gameplay coverage. Mirror of 7533 for
-     * direct cross-build comparison. Per user request 2026-05-18 for
-     * A Tale of Vengeance girls + Hugo palette bug (Hugo appears
-     * 5-10 min in). TEMPORARY — revert after fix.
-     */
-    {
-        static int dbg_frame = 0;
-        static int dbg_cap_idx = 0;
-        if ((dbg_frame % 120) == 0 && dbg_cap_idx < 600) {
-            char path[128];
-            FILE *fp;
-            snprintf(path, sizeof(path),
-                     "/media/fat/logs/OpenBOR_4086/captures/cap_%03d.ppm",
-                     dbg_cap_idx);
-            fp = fopen(path, "wb");
-            if (fp) {
-                int xi, yi;
-                fprintf(fp, "P6\\n%d %d\\n255\\n", w, h);
-                if (bpp == 32) {
-                    uint32_t Rm = screen->format->Rmask;
-                    uint32_t Gm = screen->format->Gmask;
-                    uint32_t Bm = screen->format->Bmask;
-                    for (yi = 0; yi < h; yi++) {
-                        const uint32_t *r = (const uint32_t *)(rows + yi * pitch);
-                        for (xi = 0; xi < w; xi++) {
-                            uint32_t p = r[xi];
-                            uint8_t rgb[3];
-                            rgb[0] = ((p & Rm) >> Rshift) << Rloss;
-                            rgb[1] = ((p & Gm) >> Gshift) << Gloss;
-                            rgb[2] = ((p & Bm) >> Bshift) << Bloss;
-                            fwrite(rgb, 1, 3, fp);
-                        }
-                    }
-                } else if (bpp == 16) {
-                    uint16_t Rm = screen->format->Rmask;
-                    uint16_t Gm = screen->format->Gmask;
-                    uint16_t Bm = screen->format->Bmask;
-                    for (yi = 0; yi < h; yi++) {
-                        const uint16_t *r = (const uint16_t *)(rows + yi * pitch);
-                        for (xi = 0; xi < w; xi++) {
-                            uint16_t p = r[xi];
-                            uint8_t rgb[3];
-                            rgb[0] = ((p & Rm) >> Rshift) << Rloss;
-                            rgb[1] = ((p & Gm) >> Gshift) << Gloss;
-                            rgb[2] = ((p & Bm) >> Bshift) << Bloss;
-                            fwrite(rgb, 1, 3, fp);
-                        }
-                    }
-                } else if (bpp == 8 && pal) {
-                    for (yi = 0; yi < h; yi++) {
-                        const uint8_t *r = rows + yi * pitch;
-                        for (xi = 0; xi < w; xi++) {
-                            SDL_Color c = pal->colors[r[xi]];
-                            uint8_t rgb[3] = { c.r, c.g, c.b };
-                            fwrite(rgb, 1, 3, fp);
-                        }
-                    }
-                }
-                fclose(fp);
-                dbg_cap_idx++;
-            }
-        }
-        dbg_frame++;
-    }
 }
 /* end MiSTer DDR3 bridge */
 """

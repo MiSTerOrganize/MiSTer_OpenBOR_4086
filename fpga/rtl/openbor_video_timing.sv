@@ -2,16 +2,20 @@
 //
 //  OpenBOR Native Video Timing Generator
 //
-//  320x240 active area @ 59.92 Hz (420x262 total)
-//  Exact MegaCD timing — NTSC-derived MCLK from colorburst crystal.
-//  CLK_VIDEO: 53.693 MHz (exact Genesis MCLK), variable CE_PIXEL for H_TOTAL=420.
+//  320x224 active area @ 59.92 Hz (420x262 total)
+//  Exact Sega CD NTSC H40+V28 timing — derived from NTSC colorburst.
+//  CLK_VIDEO: 53.693 MHz (exact Sega CD MCLK), variable CE_PIXEL for H_TOTAL=420.
 //
-//  H: 320 active + 100 blanking = 420 total (exact MegaCD)
-//  V: 240 active +   2 FP + 3 sync + 17 BP = 262 total (exact Genesis NTSC)
+//  H: 320 active + 100 blanking = 420 total (exact Sega CD)
+//  V: 224 active +   2 FP + 3 sync + 33 BP = 262 total (exact Sega CD V28 NTSC)
 //
-//  Refresh: 15,700 / 262 = 59.92 Hz (exact Genesis)
-//  H freq:  53,693,182 / 3420 = 15,700 Hz (exact Genesis)
-//  H active time: 320 × 8 / 53.693MHz = 47.68 µs (exact NES/SNES/Genesis)
+//  Refresh: 15,700 / 262 = 59.92 Hz (exact Sega CD)
+//  H freq:  53,693,182 / 3420 = 15,700 Hz (exact Sega CD)
+//  H active time: 320 × 8 / 53.693MHz = 47.68 µs (exact NES/SNES/Genesis/Sega CD)
+//
+//  Sega CD NTSC V28 region match — PAKs with native heights >224
+//  (e.g. 320×240 4086-era, 480×272 widescreen) get bilinear-squished
+//  to 320×224 in ARM-side patch_sdl_dummy.py before DDR3 write.
 //
 //  Adapted from MiSTer_PICO-8 by MiSTer Organize
 //  Copyright (C) 2026 MiSTer Organize -- GPL-3.0
@@ -47,11 +51,11 @@ localparam H_SYNC   = 38;
 localparam H_BP     = 45;
 localparam H_TOTAL  = 420;   // 320+17+38+45 (exact MegaCD)
 
-localparam V_ACTIVE = 240;
+localparam V_ACTIVE = 224;
 localparam V_FP     = 2;
 localparam V_SYNC   = 3;
-localparam V_BP     = 17;
-localparam V_TOTAL  = 262;   // 240+2+3+17 (exact Genesis NTSC)
+localparam V_BP     = 33;
+localparam V_TOTAL  = 262;   // 224+2+3+33 (exact Sega CD V28 NTSC)
 
 // Derived boundaries — adjusted by OSD H/V position offset.
 wire [9:0] h_sync_start = H_ACTIVE + H_FP + {{5{h_adj[4]}}, h_adj};
