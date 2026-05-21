@@ -141,7 +141,21 @@ void pausemenu()
                 case 2:  /* Reset Pak -- restart same PAK fresh.
                           * The .current.pak cache lives on SD; just exit
                           * and the daemon relaunch picks up the same file
-                          * via sdlport_patch's stat() check. */
+                          * via sdlport_patch's stat() check.
+                          *
+                          * Write a marker file so _handler.sh knows to
+                          * SKIP its defensive .s0 cleanup on respawn —
+                          * Reset needs .s0 preserved so the binary re-mounts
+                          * the same PAK. The unified _handler.sh shipped from
+                          * MiSTer_OpenBOR_7533 deletes .s0 by default on
+                          * every handler entry; without this marker, Reset
+                          * Pak goes to a black screen waiting for OSD pick.
+                          * 4086 mirror of 7533 fix 25d1d98. Handler deletes
+                          * the marker after seeing it. */
+                    {
+                        FILE *_m = fopen("/tmp/openbor_reset_marker", "w");
+                        if (_m) fclose(_m);
+                    }
                     exit(0);
                     break;
 
