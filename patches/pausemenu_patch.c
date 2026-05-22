@@ -73,6 +73,12 @@ void pausemenu()
         }
     }
 
+    /* Pause music + samples explicitly — matches stock openbor.c
+     * pausemenu. Without this, the engine keeps mixing samples while
+     * the menu is open, producing a brief audio "tail" of enemy SFX
+     * after the user opens the menu (mirrors the 7533 fix). */
+    sound_pause_music(1);
+    sound_pause_sample(1);
     pause = 2;
     bothnewkeys = 0;
 
