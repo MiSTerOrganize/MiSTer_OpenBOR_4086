@@ -257,9 +257,28 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     # Inject direct-write early-return inside video_copy_screen, right
     # after the width/height clamp and BEFORE the bscreen check.
     # bscreen is the 2x video mode buffer — NOT exposed on MiSTer (no UI
-    # to select 2x mode), so the !bscreen fast-path covers 100% of frames
-    # we currently ship. Keep stock bscreen path as a fallback in case a
-    # future feature exposes 2x mode.
+    # to select 2x mode), so the !bscreen fast-path covers most frames.
+    # Keep stock bscreen path as a fallback in case a future feature
+    # exposes 2x mode.
+    #
+    # ALSO gated on bytes_per_pixel != 1 (added 2026-05-23 after ATOV
+    # black-screen-with-audio regression on 4086). 8-bit palette-indexed
+    # PAKs (ATOV is the canonical case: no data/video.txt, falls back to
+    # 4086 stock PIXEL_8 default) lack a palette argument to pass to
+    # WriteFrame. WriteFrame's bpp==8 branch requires `palette != NULL`
+    # (native_video_writer.c:155) — passing NULL is a silent no-op:
+    # nothing reaches DDR3, screen stays black, audio thread plays
+    # normally because audio is independent of video.
+    #
+    # Fix: skip direct-write for 8-bit screens; fall through to the
+    # stock SDL chain (memcpy + SDL_Flip -> DUMMY_UpdateRects ->
+    # mister_present). mister_present (patch_sdl_dummy.py:108) has a
+    # proper bpp==8 branch that reads screen->format->palette from the
+    # SDL_Surface (which 4086 maintains via SDL_SetSurfacePalette in
+    # sdl/video.c line 238). Direct-write fast-path stays active for
+    # 16-bit (Aliens Clash etc.) and 32-bit (modern PAKs) screens; 8-bit
+    # PAKs lose the fps gain but ATOV runs natively on 4086 at full
+    # framerate anyway (legacy-era target — no perf headroom needed).
     vid = strict_replace(
         vid,
         '\tif(!width || !height) return 0;\n'
@@ -277,8 +296,14 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
         '\t * mode (bscreen) is NOT exposed on MiSTer; stock path kept as\n'
         '\t * fallback. SDL_framerateDelay() preserved per engine-function-\n'
         '\t * replacement meta-rule (engine framerate cap is a side-effect we\n'
-        '\t * mirror; other SDL_* calls are framework calls safe to bypass). */\n'
-        '\tif (!bscreen) {\n'
+        '\t * mirror; other SDL_* calls are framework calls safe to bypass).\n'
+        '\t *\n'
+        '\t * Gated on bytes_per_pixel != 1 (2026-05-23 ATOV black-screen fix):\n'
+        '\t * 8-bit palette-indexed PAKs (no data/video.txt or ColourDepth 8bit)\n'
+        '\t * fall through to stock SDL chain. WriteFrame would no-op on bpp=8\n'
+        '\t * with NULL palette; mister_present has bpp=8 palette-lookup via\n'
+        '\t * screen->format->palette. */\n'
+        '\tif (!bscreen && bytes_per_pixel != 1) {\n'
         '\t\tNativeVideoWriter_WriteFrame(src->data, src->width, src->height,\n'
         '\t\t                              src->width * bytes_per_pixel,\n'
         '\t\t                              bytes_per_pixel * 8,\n'
@@ -291,7 +316,7 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
         '#endif\n'
         '\n'
         '\tif(bscreen)',
-        'sdl/video.c video_copy_screen direct-write fast path'
+        'sdl/video.c video_copy_screen direct-write fast path (gated on bytes_per_pixel != 1)'
     )
 
     write(vid_path, vid)
