@@ -558,9 +558,8 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     #     }
     # On heavy-scene PAKs (e.g. MvC-style, ATOV boss fights), eviction
     # cascades -> all voices deactivated -> engine emits silence. When a
-    # NEW audio event later triggers reload, the limiter envelope has
-    # decayed to zero; sudden large samples bypass the limiter's attack
-    # -> audible buzz/click on resume.
+    # NEW audio event later triggers reload, sudden large samples can
+    # produce audible buzz/click on resume.
     #
     # Fix: lazy-reload evicted samples via sound_reload_sample() before
     # deactivating. Only deactivate if reload also fails. Matches the
@@ -590,7 +589,7 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
         '                /* MiSTer Frontier task #10 fix (mirror of 7533):\n'
         '                 * lazy-reload evicted samples before deactivating.\n'
         '                 * Upstream eviction caused MvC heavy-scene cutout +\n'
-        '                 * post-silence buzz from limiter envelope reset.\n'
+        '                 * post-silence buzz on resume.\n'
         '                 * sound_reload_sample() reloads from packfile. */\n'
         '                sound_reload_sample(snum);\n'
         '                if(!soundcache[snum].sample.sampleptr)\n'

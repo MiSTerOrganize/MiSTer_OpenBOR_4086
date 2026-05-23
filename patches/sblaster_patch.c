@@ -8,15 +8,10 @@
  * (engine/source/gamelib/soundmix.c lines 483/527/552) uses
  * sptr16[FIX_TO_INT(fp_pos)] = shift-truncation nearest-neighbor at all
  * three sample-read sites. The wrapper resampler matches the engine
- * kernel character (NN) at near-zero cost; anything more sophisticated
- * (linear, cubic, polyphase) would smooth already-aliased NN-mixed
- * data for marginal audible gain at real CPU cost.
+ * kernel character (NN) at near-zero cost.
  *
- * Architectural parity with OpenBOR_7533 (same kernel, same loop body).
- * 7533 was corrected from polyphase windowed-sinc to ZOH 2026-05-21;
- * 4086 historically used ZOH plus a soft-limiter, with the limiter
- * removed 2026-05-23 for sister-core parity (4086 + 7533 now byte-for-
- * byte identical in Stage 2 except for declared constants).
+ * Architectural parity with OpenBOR_7533 (same kernel, byte-for-byte
+ * identical Stage 2 loop body).
  *
  * Implementation rules:
  *   - uint32_t accum (always positive — no negative-shift UB)
