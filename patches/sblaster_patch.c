@@ -1,25 +1,22 @@
 /*
  * MiSTer_OpenBOR_4086 -- sdl/sblaster.c MiSTer replacement
  *
- * Option C v4 (4086-specific): engine at upstream native 44.1 kHz, glue
- * layer resamples to 48 kHz via ZERO-ORDER HOLD (sample-and-hold /
- * nearest-neighbor) — matches what PC SDL 1.2's default resampler does.
+ * Audio Stage 2: engine renders at upstream native 44.1 kHz; glue layer
+ * resamples to 48 kHz via ZERO-ORDER HOLD (sample-and-hold / nearest-
+ * neighbor). Engine-source-driven choice per the NON-NEGOTIABLE rule in
+ * feedback_audio_type_from_engine_source.md: upstream OpenBOR's mixer
+ * (engine/source/gamelib/soundmix.c lines 483/527/552) uses
+ * sptr16[FIX_TO_INT(fp_pos)] = shift-truncation nearest-neighbor at all
+ * three sample-read sites. The wrapper resampler matches the engine
+ * kernel character (NN) at near-zero cost; anything more sophisticated
+ * (linear, cubic, polyphase) would smooth already-aliased NN-mixed
+ * data for marginal audible gain at real CPU cost.
  *
- * Per src/audio/SDL_audiocvt.c in libsdl-org/SDL-1.2: the SDL_RateMUL*
- * upsamplers duplicate samples (dst[0] = src[0]; dst[1] = src[0];) and
- * the SDL_RateDIV* downsamplers drop samples (dst[0] = src[0]; src += 2;).
- * No interpolation. PC OpenBOR build 4086 links against SDL 1.2.15 and
- * its audio path goes through these same RateMUL/DIV functions.
- *
- * For PC reference parity on MiSTer, we mirror SDL 1.2's zero-order hold.
- * This preserves the "crunchy" nearest-neighbor character of PC OpenBOR
- * build 4086 audio exactly — not a higher-quality variant, the actual
- * platform behavior. Sister core 7533 ships polyphase windowed-sinc to
- * match its SDL2 PC reference; the SDL version is what diverges.
- *
- * SDL-version → resampler mapping (load-bearing rule for hybrid cores):
- *   SDL 1.2   → zero-order hold (sample duplication / nearest-neighbor)
- *   SDL 2     → polyphase windowed-sinc FIR (bandlimited interpolation)
+ * Architectural parity with OpenBOR_7533 (same kernel, same loop body).
+ * 7533 was corrected from polyphase windowed-sinc to ZOH 2026-05-21;
+ * 4086 historically used ZOH plus a soft-limiter, with the limiter
+ * removed 2026-05-23 for sister-core parity (4086 + 7533 now byte-for-
+ * byte identical in Stage 2 except for declared constants).
  *
  * Implementation rules:
  *   - uint32_t accum (always positive — no negative-shift UB)
@@ -35,7 +32,6 @@
 #include "sdlport.h"
 #include "native_audio_writer.h"
 
-#include <math.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -76,18 +72,6 @@ static void *audio_thread_fn(void *arg) {
      * Cast to uint64_t before shift to avoid the int32 overflow trap. */
     const uint32_t STEP = (uint32_t)(((uint64_t)ENGINE_AUDIO_RATE << 16) / MISTER_AUDIO_RATE);
 
-    /* Soft-limiter state — envelope-following stereo-linked design (mirrored
-     * from MiSTer_OpenBOR_7533). Applied after the zero-order-hold resample
-     * to catch multi-voice mixer sums that exceed [-32768, 32767]. Same
-     * limiter design across both cores even though Stage 2 method differs
-     * (4086 = zero-order hold per SDL 1.2 PC reference; 7533 = polyphase
-     * windowed-sinc per SDL 2 PC reference). */
-    const float ATTACK_COEFF  = expf(-1.0f / (0.001f * (float)MISTER_AUDIO_RATE));
-    const float RELEASE_COEFF = expf(-1.0f / (0.100f * (float)MISTER_AUDIO_RATE));
-    const float THRESHOLD     = 27852.0f;  /* -1.5 dBFS */
-    float lim_env  = 0.0f;
-    float lim_gain = 1.0f;
-
     while (audio_thread_run) {
         size_t free_frames = NativeAudioWriter_FreeFrames();
 
@@ -96,45 +80,23 @@ static void *audio_thread_fn(void *arg) {
             continue;
         }
 
+        /* Pull IN_FRAMES_PER_TICK fresh frames from the engine's stateful mixer. */
         update_sample((unsigned char *)in_buf, IN_FRAMES_PER_TICK * 4);
 
-        /* Zero-order hold 44.1 → 48 kHz + soft-limiter, per stereo frame.
-         * Zero-order hold matches SDL 1.2's SDL_RateMUL behavior. */
+        /* Zero-order hold (nearest-neighbor) resample 44100 -> 48000 Hz.
+         * Mirrors engine character per feedback_audio_type_from_engine_source.md
+         * (engine/source/gamelib/soundmix.c at lines 483/527/552 uses
+         * sptr16[FIX_TO_INT(fp_pos)] = shift-truncation NN at all three
+         * sample-read sites). Pure ZOH at wrapper preserves engine
+         * character at near-zero cost. Architectural parity with
+         * OpenBOR_7533 (same loop body byte-for-byte). */
         uint32_t accum = 0;
         int i;
         for (i = 0; i < MISTER_AUDIO_CHUNK; i++) {
             int ip = (int)(accum >> 16);
             if (ip >= IN_FRAMES_PER_TICK) ip = IN_FRAMES_PER_TICK - 1;
-
-            int16_t l = in_buf[2 * ip + 0];
-            int16_t r = in_buf[2 * ip + 1];
-
-            /* Soft-limiter: envelope follower + smoothed stereo-linked gain. */
-            float L = (float)l, R = (float)r;
-            float aL = L < 0.0f ? -L : L;
-            float aR = R < 0.0f ? -R : R;
-            float peak = aL > aR ? aL : aR;
-
-            if (peak > lim_env) lim_env = peak;
-            else                lim_env = lim_env * RELEASE_COEFF + peak * (1.0f - RELEASE_COEFF);
-
-            float target_gain = (lim_env > THRESHOLD) ? (THRESHOLD / lim_env) : 1.0f;
-
-            if (target_gain < lim_gain)
-                lim_gain = lim_gain * ATTACK_COEFF + target_gain * (1.0f - ATTACK_COEFF);
-            else
-                lim_gain = lim_gain * RELEASE_COEFF + target_gain * (1.0f - RELEASE_COEFF);
-
-            int Lo = (int)(L * lim_gain);
-            int Ro = (int)(R * lim_gain);
-            if (Lo > 32767)  Lo = 32767;
-            if (Lo < -32768) Lo = -32768;
-            if (Ro > 32767)  Ro = 32767;
-            if (Ro < -32768) Ro = -32768;
-
-            out_buf[2 * i + 0] = (int16_t)Lo;
-            out_buf[2 * i + 1] = (int16_t)Ro;
-
+            out_buf[2 * i + 0] = in_buf[2 * ip + 0];
+            out_buf[2 * i + 1] = in_buf[2 * ip + 1];
             accum += STEP;
         }
 
