@@ -28,8 +28,9 @@ def write(path, content):
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)
 
-def strict_replace(content, old, new, label):
-    """Replace `old` with `new` in content; RAISE if `old` not found.
+def strict_replace(content, old, new, label, count=1):
+    """Replace `old` with `new` in content; RAISE if `old` not found OR
+    if found more than `count` times (default 1).
 
     Use this instead of `content.replace(old, new)` for patches where a
     silent no-op would corrupt the build. Mirrored from 7533 2026-05-22
@@ -43,6 +44,11 @@ def strict_replace(content, old, new, label):
     they're intentionally conditional and use `if pattern in source`
     guards before the replace, so they CAN'T silently no-op the way
     bare `.replace()` calls outside guards would.
+
+    Mirrored hardening 2026-05-24 (from 7533 SUB-PROFILE v5 session):
+    count=1 default catches the SILENT OVER-REPLACE class. Pass explicit
+    count=N when intentional multi-match is correct. See
+    feedback_strict_replace_count_check.md.
     """
     if old not in content:
         raise RuntimeError(
@@ -50,6 +56,15 @@ def strict_replace(content, old, new, label):
             f"  First 80 chars of expected: {old[:80]!r}\n"
             f"  Verify the pattern matches PRISTINE upstream at "
             f"https://raw.githubusercontent.com/DCurrent/openbor/af23dc9c/engine/..."
+        )
+    actual_count = content.count(old)
+    if actual_count != count:
+        raise RuntimeError(
+            f"strict_replace failed for '{label}': expected {count} match(es), "
+            f"found {actual_count}. Pattern is not unique enough.\n"
+            f"  First 80 chars of expected: {old[:80]!r}\n"
+            f"  Add more surrounding context to make the pattern unique, "
+            f"or pass count={actual_count} if multi-match is intentional."
         )
     return content.replace(old, new)
 
@@ -427,17 +442,22 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     # so they need their own replacement. Writing to cwd's Logs/ directory
     # violates the canonical single-location log rule
     # (/media/fat/logs/{CoreName}/) — patch to absolute paths.
+    # 4 occurrences each — intentional multi-match (LOGFILE macros all
+    # hardcode the same string). count override required by hardened
+    # strict_replace (mirrored from 7533 2026-05-24).
     src = strict_replace(
         src,
         '"./Logs/OpenBorLog.txt"',
         '"/media/fat/logs/OpenBOR_4086/OpenBorLog.txt"',
-        'source/utils.c LOGFILE OpenBorLog.txt absolute path'
+        'source/utils.c LOGFILE OpenBorLog.txt absolute path',
+        count=4
     )
     src = strict_replace(
         src,
         '"./Logs/ScriptLog.txt"',
         '"/media/fat/logs/OpenBOR_4086/ScriptLog.txt"',
-        'source/utils.c LOGFILE ScriptLog.txt absolute path'
+        'source/utils.c LOGFILE ScriptLog.txt absolute path',
+        count=4
     )
 
     write(os.path.join(obor, 'source/utils.c'), src)
@@ -447,31 +467,31 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     print("Patching openbor.c (split save directories)...")
     obor_c = read(os.path.join(obor, 'openbor.c'))
 
-    # .cfg files: savesettings/loadsettings -> "Config"
-    # These have: getBasePath(path, "Saves", 0); getPakName(tmpname, 4);
+    # .cfg files: savesettings/loadsettings -> "Config" — 2 occurrences each.
     obor_c = strict_replace(
         obor_c,
         'getBasePath(path, "Saves", 0);\n    getPakName(tmpname, 4);',
         '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "Config", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    getPakName(tmpname, 4);',
-        'openbor.c getBasePath Saves -> Config (.cfg getPakName 4)'
+        'openbor.c getBasePath Saves -> Config (.cfg getPakName 4)',
+        count=2
     )
 
     # default.cfg: saveasdefault/loadfromdefault -> "Config"
-    # These have: getBasePath(path, "Saves", 0); strncat(path, "default.cfg", 128);
     obor_c = strict_replace(
         obor_c,
         'getBasePath(path, "Saves", 0);\n    strncat(path, "default.cfg", 128);',
         '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "Config", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    strncat(path, "default.cfg", 128);',
-        'openbor.c getBasePath Saves -> Config (default.cfg)'
+        'openbor.c getBasePath Saves -> Config (default.cfg)',
+        count=2
     )
 
     # .hi files: saveHighScoreFile/loadHighScoreFile -> "Config"
-    # These have: getBasePath(path, "Saves", 0); getPakName(tmpname, 1);
     obor_c = strict_replace(
         obor_c,
         'getBasePath(path, "Saves", 0);\n    getPakName(tmpname, 1);',
         '#ifdef MISTER_NATIVE_VIDEO\n    getBasePath(path, "Config", 0);\n#else\n    getBasePath(path, "Saves", 0);\n#endif\n    getPakName(tmpname, 1);',
-        'openbor.c getBasePath Saves -> Config (.hi getPakName 1)'
+        'openbor.c getBasePath Saves -> Config (.hi getPakName 1)',
+        count=2
     )
 
     # .s00 save states: saveScriptFile/loadScriptFile -> "SaveStates"
