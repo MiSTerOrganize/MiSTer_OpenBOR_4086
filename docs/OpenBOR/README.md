@@ -17,6 +17,10 @@ If a PAK won't run on one build, reload the other RBF and try again — your `Pa
 
 - **Native FPGA video output** — 320×224 @ 59.92 Hz with exact Sega CD NTSC pixel clock (6.712 MHz from NTSC colorburst crystal). H40+V28 mode — CRT image width matches NES/SNES/Genesis exactly (47.68 µs active time)
 - **Direct DDR3 write frame path** — engine's `video_copy_screen` writes pixel data directly to the FPGA's video ring buffer at 0x3A000000 for 16-bit and 32-bit PAKs, bypassing SDL 1.2's surface chain. 8-bit palette-indexed PAKs (legacy 4086-era carts like A Tale of Vengeance that don't declare a ColourDepth in `data/video.txt`) fall through to the engine's stock SDL chain with palette-aware rendering via the SDL_Surface's attached palette. Architectural parity with OpenBOR_7533 (2026-05-22; 8-bit fall-through added 2026-05-23 ATOV fix).
+- **PAK load-time hash-map cache** (v2.10, sister-core mirror from 7533, 2026-05-24) — `loadsprite()` cache lookup replaced from O(N) linear scan to O(1) hash table (262144 buckets, separate chaining, DJB2 hash with inline case-folding). Validated:
+  - Aliens Clash: ~5-15 s estimated → **0.6 s (-95%)** ⭐
+  - Smaller legacy PAKs with high sprite-reuse expected to see similar near-instant load times
+  - `[LOAD] PAK loaded in N ms` printf retained at end of `load_models()` for tracking — `grep '\[LOAD\]' /media/fat/logs/OpenBOR_4086/OpenBorLog.txt`
 - **Native FPGA audio output** — 48 kHz stereo via DDR3 ring buffer, no ALSA. Audio kernel: **nearest-neighbor (zero-order hold)** at engine + wrapper (matches upstream OpenBOR `engine/source/gamelib/soundmix.c` FIX_TO_INT shift-truncation kernel at all three sample-read sites — music + 8-bit voice + 16-bit voice; wrapper at `patches/sblaster_patch.c::audio_thread_fn` mirrors the engine character — both stages NN).
 - **CRT support** — scanlines, shadow masks, and analog video output for CRT displays
 - **MiSTer OSD integration** — load PAK files from the file browser
