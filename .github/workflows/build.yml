@@ -6,6 +6,7 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main]
+  workflow_dispatch:        # manual "Run workflow" button (build any branch on demand)
 
 jobs:
   build-arm:
