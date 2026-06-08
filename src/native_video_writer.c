@@ -26,6 +26,10 @@
 //  Copyright (C) 2026 MiSTer Organize — GPL-3.0
 //
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE   /* 2026-06-08 affinity fix: sched_setaffinity / cpu_set_t for render-thread core-1 pin */
+#endif
+#include <sched.h>   /* cpu_set_t / CPU_SET / sched_setaffinity */
 #include "native_video_writer.h"
 
 #include <fcntl.h>
@@ -61,6 +65,21 @@ static uint32_t frame_counter = 0;
 static int active_buf = 0;
 
 bool NativeVideoWriter_Init(void) {
+    /* 2026-06-08 affinity fix (mirror 7533): pin this (engine/render/main) thread to
+     * core 1. Handler launches with taskset 0x03; render stays on the interrupt-free
+     * core 1 while audio moves to core 0 (sblaster_patch.c). CPU0 takes ~165M device
+     * IRQs (USB/fb/SD), CPU1 zero -- see feedback_affinity_render_core1_audio_core0. */
+    {
+        cpu_set_t _cs;
+        CPU_ZERO(&_cs);
+        CPU_SET(1, &_cs);
+        if (sched_setaffinity(0, sizeof(_cs), &_cs) != 0) {
+            perror("NativeVideoWriter: sched_setaffinity core 1");
+        } else {
+            fprintf(stderr, "NativeVideoWriter: render thread pinned to core 1\n");
+        }
+    }
+
     mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (mem_fd < 0) {
         perror("NativeVideoWriter: open /dev/mem");

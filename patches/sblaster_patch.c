@@ -22,6 +22,10 @@
  * Copyright (C) 2026 MiSTer Organize -- GPL-3.0
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE   /* 2026-06-08 affinity fix: pthread_setaffinity_np / CPU_SET for audio core-0 pin */
+#endif
+#include <sched.h>   /* CPU_ZERO / CPU_SET / cpu_set_t */
 #include "sblaster.h"
 #include "soundmix.h"
 #include "sdlport.h"
@@ -66,6 +70,17 @@ static void *audio_thread_fn(void *arg) {
     /* 16.16 step per output sample: (44100 << 16) / 48000 = 60211.
      * Cast to uint64_t before shift to avoid the int32 overflow trap. */
     const uint32_t STEP = (uint32_t)(((uint64_t)ENGINE_AUDIO_RATE << 16) / MISTER_AUDIO_RATE);
+
+    /* 2026-06-08 affinity fix (mirror 7533): pin the audio thread to core 0, away from
+     * the render thread (core 1). Handler taskset 0x03 makes this CPU_SET(0) succeed
+     * (under the old 0x02 it would silently EINVAL). Placed after the declarations to
+     * avoid a C90 declaration-after-statement error. */
+    {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(0, &cpuset);
+        pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
+    }
 
     while (audio_thread_run) {
         size_t free_frames = NativeAudioWriter_FreeFrames();

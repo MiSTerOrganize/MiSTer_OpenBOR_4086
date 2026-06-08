@@ -111,4 +111,7 @@ fi
 sleep 1
 
 echo "OpenBOR handler: dispatching to $BINARY (RBF=$MISTER_RBF)" > "$LOGDIR/OpenBOR.log"
-exec ./"$BINARY" >> "$LOGDIR/OpenBOR.log" 2>&1
+# 2026-06-08 affinity fix: taskset 0x03 (both cores) so the binary's render-thread
+# pin to core 1 (native_video_writer.c) + audio-thread pin to core 0 (sblaster_patch.c)
+# take effect. Core 0 takes ~165M device IRQs (USB/fb/SD), core 1 is interrupt-free.
+exec taskset 0x03 ./"$BINARY" >> "$LOGDIR/OpenBOR.log" 2>&1
