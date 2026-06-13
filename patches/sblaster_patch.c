@@ -71,14 +71,16 @@ static void *audio_thread_fn(void *arg) {
      * Cast to uint64_t before shift to avoid the int32 overflow trap. */
     const uint32_t STEP = (uint32_t)(((uint64_t)ENGINE_AUDIO_RATE << 16) / MISTER_AUDIO_RATE);
 
-    /* 2026-06-08 affinity fix (mirror 7533): pin the audio thread to core 0, away from
-     * the render thread (core 1). Handler taskset 0x03 makes this CPU_SET(0) succeed
-     * (under the old 0x02 it would silently EINVAL). Placed after the declarations to
-     * avoid a C90 declaration-after-statement error. */
+    /* 2026-06-13 affinity rule INVERTED (mirror 7533): pin the audio thread to core 1,
+     * leaving the memory-fast core 0 for the render thread (native_video_writer.c).
+     * Audio is light (~6.7 ticks/sec); render is memory-bound and wins core 0's ~1.85x
+     * DDR3 bandwidth. Handler taskset 0x03 makes this CPU_SET(1) succeed. Placed after
+     * the declarations to avoid a C90 declaration-after-statement error.
+     * See feedback_affinity_render_core0_audio_core1.md. */
     {
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
-        CPU_SET(0, &cpuset);
+        CPU_SET(1, &cpuset);
         pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
     }
 
