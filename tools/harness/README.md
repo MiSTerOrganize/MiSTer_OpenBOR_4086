@@ -1,71 +1,34 @@
-# OpenBOR diff / debug harness
+# OpenBOR_4086 diff / debug harness — AD-HOC ONLY (no mass-scan)
 
-The OpenBOR counterpart of the PICO-8 diff harness (`MiSTer_PICO-8/tools/harness/`).
-Finds engine bugs by exercising PAKs off-device and classifying failures, using the
-same category model as PICO-8 (see workspace `#BENCHMARK_TOOLS.md` section C +
-`feedback_hybrid_core_diff_harness_required.md`). Shared between OpenBOR_7533 and
-OpenBOR_4086 (same PAK format + engine family); edit in 7533, mirror to 4086.
+🛑 **4086 is the LEGACY-compat core. Do NOT mass-scan it against the PAK corpus.**
+Per the corpus-class principle (`feedback_hybrid_core_diff_harness_required.md`):
+a mass-scan is only meaningful against the PAK class the engine is *supposed* to
+run. 4086 runs **legacy** PAKs; **modern PAKs crash it by design-incompatibility**
+(they were never built for the 4086-era engine). A full-corpus crash scan on 4086
+would be a flood of expected, never-fixable crashes that drown any real signal.
 
-## Status
+So 4086's harness is **ad-hoc only**: when debugging a *specific legacy PAK* that
+4086 is meant to run (e.g. A Tale of Vengeance, Aliens Clash), run that one PAK
+through the headless binary to reproduce/diagnose a crash or hang off-device —
+never a corpus sweep. The **modern-corpus mass-scan lives on OpenBOR_7533** (the
+modern engine that's supposed to run the modern corpus); see
+`MiSTer_OpenBOR_7533/tools/harness/FINDINGS.md`.
 
-| Category | Status | Tool |
-|---|---|---|
-| **Decode** (PAK-integrity) | ✅ DONE — 450/450 local corpus clean | `pak_decode_scan.py` |
-| **Headless build** | ✅ DONE — compiles+links on x86 (`diff_harness.yml`) | `build_headless.sh` |
-| **Crashes** | ✅ FUNCTIONAL — SIGSEGV/BUS/ABRT/FPE backtrace→addr2line | `apply_patches_headless.py` + `pak_run_scan.sh` |
-| **Hangs** (SIGALRM wall-clock, re-armed/frame) | ✅ FUNCTIONAL | same |
-| **Input-fed mass-scan** | 🏗️ (basic run works; generic input-feed TODO) | `pak_run_scan.sh` |
-| **Preprocess** (script/model parse, #include) | 🏗️ planned (engine-logic patches layer) | (planned) |
-| **Render-correctness** | 🔴 GAP — no open ground-truth (PC OpenBOR.exe only) | — |
+## What's here
+- `pak_decode_scan.py` — PAK-integrity (decode) scan; engine-agnostic, fine on any
+  PAK set (validates packfile structure, not engine compatibility).
+- `diff_harness.yml` + `build_headless.sh` — headless 4086 (SDL 1.2) build for
+  **ad-hoc** legacy-PAK debugging. Crash (`SIGSEGV/ABRT` backtrace + addr2line) and
+  hang (`--alarm`) tooling is the same model as 7533's.
 
-**Runner:** `OpenBOR_headless` is **dynamic glibc+SDL2** (unlike PICO-8's fully-static z8headless that runs on the musl docker-desktop WSL). It runs in an **`ubuntu:24.04` glibc container matching the `diff_harness.yml` build env** — `docker run` mounting the PAK corpus + binary + an out dir, executing `pak_run_scan.sh`. This is *running* a diagnostic in a container, not building (the no-local-Docker rule is about the ARM ship build). Milestone 1b verified: A Tale of Vengeance → 60 frames → exit 0.
-
-## Decode category (done) — `pak_decode_scan.py`
-
-```
-python tools/harness/pak_decode_scan.py <paks_root> [out_file]
-```
-Reads every PAK by the canonical packfile format (upstream `engine/source/gamelib/
-packfile.c/.h` directory layout — the same the engine's reader walks) and validates
-structural integrity: directory offset, per-entry `pns_len`, `filestart+filesize`
-within EOF (truncation), name decodability. A PAK our reader chokes on = one the
-engine chokes on too. No headless engine needed. Local corpus
-(`OpenBOR_Paks/Paks`, ~450 PAKs): 450/450 clean.
-
-This is the OpenBOR analog of PICO-8's shrinko8 decode-differential — except
-PAKs are packfile *archives*, not PXA-compressed code, so "decode" = archive
-integrity rather than a two-tool decompressor diff (there is no "shrinko8 for
-OpenBOR"; the packfile format spec IS the reference).
-
-## Crash / hang / render categories — headless build plan (the remaining arc)
-
-OpenBOR has NO SDL-free core lib (unlike zepto8core), so the headless harness is a
-real build-out, iterated via a `diff_harness.yml` CI workflow (native x86 ubuntu,
-no QEMU — OpenBOR compiles on Linux/PC natively). Plan:
-
-1. **`diff_harness.yml`**: clone DCurrent/openbor v7533 (v4086 for the sister), apply
-   our ENGINE-LOGIC patches only (palette pipeline, stale-pointer fixes,
-   screen_status normalize, range defaults, loadsprite hash — the behaviors we ship
-   and want to test), NOT the MiSTer-infra patches (DDR3 `main()`, video-DDR3).
-2. **Headless video sink**: a headless `native_video_writer.c` whose `WriteFrame`
-   captures the latest frame to memory (PNG dump on demand) instead of mmapping
-   `/dev/mem` at 0x3A000000. Hook the same `video_copy_screen` point the MiSTer
-   build patches.
-3. **Headless driver / main**: replace the MiSTer OSD/`.s0` `main()` with one that
-   takes `--pak <path> --frames N --dump <list> [--alarm SECS]`, mounts the PAK,
-   runs N frames of the engine loop, dumps frames, exits. Crash handler
-   (SIGSEGV/SIGABRT/SIGFPE → backtrace → addr2line) + `--alarm` wall-clock SIGALRM
-   for hangs (engine-agnostic; catches both C and script-VM infinite loops — most
-   OpenBOR engine work is in the load path, so a "load every PAK headless" sweep
-   directly exercises our patches).
-4. **Preprocess**: once headless, diff the engine's parsed model/script output (post
-   `#include` / model-load) for structural consistency across the PAK library.
-5. **Mass-scan**: `pak_scan.sh` runs `openbor_headless` over every PAK, classifies
-   crash / hang / black / animates (mirror of PICO-8 `scan_library.sh`).
-
-Render-correctness stays a GAP (no open reference renderer; PC OpenBOR.exe is the
-only ground truth — the same situation as PICO-8 needing the official binary).
-
-Expect multiple CI cycles to get the headless build green (OpenBOR is finicky:
-GCC UB flags, SDL2 deps, monolithic main). This mirrors how the PICO-8 headless
-harness took an extended arc to land.
+## Status / remaining
+The 4086 headless build is SDL **1.2** (vs 7533's SDL 2), so the
+`apply_patches_headless` overrides (env-`OB_PAK` `main` + frame-counter/alarm hook)
+need a 4086-specific video anchor — 4086's `video_copy_screen` is
+`memcpy + SDL_Flip → DUMMY_UpdateRects`, not SDL2 `SDL_UpdateTexture`. Milestone 1a
+(compile) is wired (`diff_harness.yml` + `build_headless.sh`); the 1b harness
+overrides for ad-hoc run get finalized **when a 4086 legacy-PAK bug actually needs
+off-device debugging** — no value finishing/iterating speculatively since 4086 is
+not mass-scanned. Once finalized, ad-hoc use:
+`OB_PAK=/paks/<legacy>.pak OB_FRAMES=N ./OpenBOR_headless` in an ubuntu glibc
+container with SDL 1.2 runtime libs.
