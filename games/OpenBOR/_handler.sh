@@ -111,7 +111,12 @@ fi
 sleep 1
 
 echo "OpenBOR handler: dispatching to $BINARY (RBF=$MISTER_RBF)" > "$LOGDIR/OpenBOR.log"
-# 2026-06-08 affinity fix: taskset 0x03 (both cores) so the binary's render-thread
-# pin to core 1 (native_video_writer.c) + audio-thread pin to core 0 (sblaster_patch.c)
-# take effect. Core 0 takes ~165M device IRQs (USB/fb/SD), core 1 is interrupt-free.
+
+# Affinity: allow BOTH cores (mask 0x03 = cores 0+1). The process mask must
+# cover both cores or the binary's own thread pins fail with EINVAL (a child
+# thread cannot widen affinity past the process mask — the original 0x02 mask
+# silently broke thread pinning). WHICH thread goes on WHICH core is decided
+# inside each build's binary (native_video_writer.c render pin +
+# sblaster_patch.c audio pin), not here — this shared handler only opens
+# both cores so those pins take effect.
 exec taskset 0x03 ./"$BINARY" >> "$LOGDIR/OpenBOR.log" 2>&1
