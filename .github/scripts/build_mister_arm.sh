@@ -5,7 +5,16 @@
 # Called by GitHub Actions CI workflow.
 #
 # Expects /build to be mounted from the repo checkout.
+#
+# Runs under `set +e` (SDL ./configure probes optional features that fail
+# non-fatally). So a failed dependency download or a failed make does NOT
+# abort on its own — every critical artifact is checked with require_file()
+# and the build fails LOUDLY at the point of failure (a transient tarball
+# download otherwise surfaces confusingly downstream as `cp: cannot stat
+# 'OpenBOR'` in the commit-back step). Mirrors the 7533 hardening 2026-07-23.
 set +e
+
+require_file() { [ -f "$1" ] || { echo "ERROR: $2" >&2; exit 1; }; }
 
 SDL_PREFIX=/tmp/sdl12
 
@@ -26,6 +35,7 @@ apt-get clean
 echo "=== Building SDL 1.2.15 ==="
 cd /tmp
 wget -q https://www.libsdl.org/release/SDL-1.2.15.tar.gz
+require_file SDL-1.2.15.tar.gz "SDL 1.2 download failed"
 tar xzf SDL-1.2.15.tar.gz
 cd SDL-1.2.15
 
@@ -53,6 +63,7 @@ make install --quiet
 echo "=== Building SDL_gfx 2.0.26 ==="
 cd /tmp
 wget -q https://www.ferzkopp.net/Software/SDL_gfx-2.0/SDL_gfx-2.0.26.tar.gz
+require_file SDL_gfx-2.0.26.tar.gz "SDL_gfx download failed"
 tar xzf SDL_gfx-2.0.26.tar.gz
 cd SDL_gfx-2.0.26
 ./configure \
@@ -70,6 +81,7 @@ make install --quiet
 echo "=== Building libogg ==="
 cd /tmp
 wget -q https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.gz
+require_file libogg-1.3.5.tar.gz "libogg download failed"
 tar xzf libogg-1.3.5.tar.gz
 cd libogg-1.3.5
 ./configure --prefix=$SDL_PREFIX --disable-shared --enable-static --quiet
@@ -80,6 +92,7 @@ make install --quiet
 echo "=== Building libvorbis ==="
 cd /tmp
 wget -q https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz
+require_file libvorbis-1.3.7.tar.gz "libvorbis download failed"
 tar xzf libvorbis-1.3.7.tar.gz
 cd libvorbis-1.3.7
 ./configure --prefix=$SDL_PREFIX --disable-shared --enable-static --with-ogg=$SDL_PREFIX --quiet
@@ -104,6 +117,7 @@ make install --quiet
 echo "=== Building libpng ==="
 cd /tmp
 wget -q https://download.sourceforge.net/libpng/libpng-1.6.39.tar.gz
+require_file libpng-1.6.39.tar.gz "libpng download failed"
 tar xzf libpng-1.6.39.tar.gz
 cd libpng-1.6.39
 CPPFLAGS="-I$SDL_PREFIX/include" LDFLAGS="-L$SDL_PREFIX/lib" \
@@ -165,6 +179,7 @@ echo "=== Building OpenBOR for MiSTer ==="
 make BUILD_MISTER=1 SDL_PREFIX=$SDL_PREFIX -j$(nproc)
 
 echo "=== Binary info ==="
+require_file OpenBOR "make produced no OpenBOR binary — see the compile/link errors above (a missing dependency header or a real build error)"
 ls -lh OpenBOR
 
 # ── Copy result back to mounted volume ───────────────────────────
