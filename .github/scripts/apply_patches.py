@@ -946,6 +946,38 @@ static inline int SDL_GetDesktopDisplayMode(int d, SDL_DisplayMode *m) {
     write(sm_path, sm)
     print("  soundmix.c patched (mixaudio cache-reload, NO diagnostic).")
 
+    # ── POST-APPLY INTEGRITY GATE (2026-07-26, mirrored from 7533) ──────────
+    # Catches the dropped-write / silent-no-op patch class: a patch applies in
+    # memory (strict_replace succeeds -> "All patches applied") but never reaches
+    # the compiled binary because its variable is never written to disk (or a
+    # later section re-reads the file fresh). That is the 7533 5c89107 bug that
+    # silently dropped the palette + hash-map section and shipped to all users.
+    # 4086 currently uses balanced read/write pairs (not at risk today), but this
+    # gate future-proofs against a regression: it asserts the FINAL on-disk source
+    # contains each load-bearing patch's signature and HARD-FAILS the build on a
+    # miss. Ship-build only. (Conservative signature set — extend as 4086's
+    # load-bearing patches are individually verified against its CI build.)
+    if not os.environ.get('OB_HEADLESS'):
+        _required = {
+            'openbor.c': ['prepare_sprite_map'],   # hash-map loadsprite optimization
+        }
+        _missing = []
+        for _rel, _sigs in _required.items():
+            try:
+                _c = read(os.path.join(obor, _rel))
+            except Exception as _e:
+                _missing.append("%s: UNREADABLE (%s)" % (_rel, _e)); continue
+            for _sig in _sigs:
+                if _sig not in _c:
+                    _missing.append("%s: MISSING load-bearing signature %r" % (_rel, _sig[:60]))
+        if _missing:
+            raise RuntimeError(
+                "POST-APPLY INTEGRITY GATE FAILED -- a load-bearing patch applied in "
+                "memory but is NOT in the final on-disk source (dropped write / silent "
+                "no-op; the 7533 5c89107 bug class):\n  " + "\n  ".join(_missing))
+        print("Post-apply integrity gate: %d load-bearing signature(s) verified present." %
+              sum(len(v) for v in _required.values()))
+
     print("\nAll patches applied successfully.")
 
 if __name__ == '__main__':
