@@ -15,6 +15,14 @@ GAMEDIR="/media/fat/games/OpenBOR"
 
 cd "$GAMEDIR" || exit 1
 
+# Auto-create ALL of the core's game folders so they always exist for every user
+# (standing hybrid-core rule: the handler owns every folder — content + recordings
+# + logs). Paks/ = PAK game modules (SC0 "Load PAK"); Replays/ = recorder .inp files
+# (SC1 "Load Replay"). Both live under games/OpenBOR/ so the OSD file browser (which
+# opens at the core's games/<setname>/ HomeDir) can reach them; NOT under saves/,
+# which the browser can't reach. (Logs/ is created below, once $LOGDIR is known.)
+mkdir -p "$GAMEDIR/Paks" "$GAMEDIR/Replays" 2>/dev/null
+
 # Read MiSTer Main's argv to find the loaded RBF filename.
 # `pidof MiSTer` may return multiple PIDs (older lingering shells); take
 # the one whose argv contains an .rbf path.
@@ -91,6 +99,12 @@ if [ -f /tmp/openbor_reset_marker ] || [ -f /tmp/openbor_hotswap_marker ]; then
 else
     rm -f /media/fat/config/OpenBOR.s0 2>/dev/null
 fi
+
+# NOTE: .s1 is intentionally NOT cleared here. The binary detects a replay pick
+# by .s1's MTIME (baselined at startup) — every OSD "Load Replay" pick bumps the
+# mtime, even re-picking the same .inp, so a fresh pick triggers while a stale/
+# unchanged .s1 never auto-replays. Clearing .s1 would risk a clear-then-restore
+# false trigger, so we leave it as a persistent "last replay" marker.
 
 # Free kernel page cache — FC0 PAK streaming exhausts RAM otherwise.
 # OpenBOR segfaults on repeated PAK loads without this.
