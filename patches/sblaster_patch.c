@@ -23,7 +23,7 @@
  */
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE   /* 2026-06-08 affinity fix: pthread_setaffinity_np / CPU_SET for audio core-0 pin */
+#define _GNU_SOURCE   /* 2026-06-13 affinity INVERSION: pthread_setaffinity_np / CPU_SET for audio core-1 pin */
 #endif
 #include <sched.h>   /* CPU_ZERO / CPU_SET / cpu_set_t */
 #include "sblaster.h"

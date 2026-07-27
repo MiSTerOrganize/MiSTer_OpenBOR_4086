@@ -27,7 +27,7 @@
 //
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE   /* 2026-06-08 affinity fix: sched_setaffinity / cpu_set_t for render-thread core-1 pin */
+#define _GNU_SOURCE   /* 2026-06-13 affinity INVERSION: sched_setaffinity / cpu_set_t for render-thread core-0 pin */
 #endif
 #include <sched.h>   /* cpu_set_t / CPU_SET / sched_setaffinity */
 #include "native_video_writer.h"
