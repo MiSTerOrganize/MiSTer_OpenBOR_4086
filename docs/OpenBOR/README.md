@@ -16,20 +16,28 @@ If a PAK won't run on one build, reload the other RBF and try again — your `Pa
 ## Features
 
 - **Native FPGA video output** — 320×224 @ 59.92 Hz with exact Sega CD NTSC pixel clock (6.712 MHz from NTSC colorburst crystal). H40+V28 mode — CRT image width matches NES/SNES/Genesis exactly (47.68 µs active time)
-- **Direct DDR3 write frame path** — engine's `video_copy_screen` writes pixel data directly to the FPGA's video ring buffer at 0x3A000000 for 16-bit and 32-bit PAKs, bypassing SDL 1.2's surface chain. 8-bit palette-indexed PAKs (legacy 4086-era carts like A Tale of Vengeance that don't declare a ColourDepth in `data/video.txt`) fall through to the engine's stock SDL chain with palette-aware rendering via the SDL_Surface's attached palette. Architectural parity with OpenBOR_7533 (2026-05-22; 8-bit fall-through added 2026-05-23 ATOV fix).
-- **Entity-tick fast paths** (deliberate divergence from 7533's v3.0 work) — 7533's 2026-05-26 entity-collision + AI fast-path bundle (Steps 14/15/16: B+E entity-collision cull, find_target reorder, do_attack invariant hoist, etc.) is INTENTIONALLY not mirrored to 4086. Reason: the v7533 optimizations target functions that don't exist (or are already cheap-first) in the 4086-era engine — `check_entity_collision_for()` was added in OpenBOR 4.0; `ent_post_update()` in 4086 only does `check_gravity` + `check_move` + optional `adjust_bind` (no O(N²) collision pair loop); `do_attack`'s pre-`checkhit` chain is already cheap-first by upstream author choice. 4086 was authored when the engine did less per-tick work; the 7533 optimizations exist BECAUSE the modern engine got more expensive. 4086 runs at full speed on its native PAK set already.
-- **PAK load-time hash-map cache** (v2.10, sister-core mirror from 7533, 2026-05-24) — `loadsprite()` cache lookup replaced from O(N) linear scan to O(1) hash table (262144 buckets, separate chaining, DJB2 hash with inline case-folding). Validated:
-  - Aliens Clash: ~5-15 s estimated → **0.6 s (-95%)** ⭐
-  - Smaller legacy PAKs with high sprite-reuse expected to see similar near-instant load times
-  - `[LOAD] PAK loaded in N ms` printf retained at end of `load_models()` for tracking — `grep '\[LOAD\]' /media/fat/logs/OpenBOR_4086/OpenBorLog.txt`
-- **Loading bar clamp** (v2.10, sister-core mirror from 7533) — when a PAK declares a loading bar with `bsize=0` (cart-author shortcut meaning "no real bar requested") AND would otherwise show pure black during the model-cache init phase, the engine renders a default on-screen progress bar at the bottom-center. Gated narrowly so PAKs with intentional on-screen bars or per-level `bgPosi` displays are unchanged.
+- **Direct DDR3 write frame path** — engine's `video_copy_screen` writes pixel data directly to the FPGA's video ring buffer at 0x3A000000, bypassing SDL's renderer/surface chain entirely (saved ~15 ms/frame on Cortex-A9; lifted native fps from ~29 to ~85-100 on a powerful frame-present path 2026-05-22)
+- **Per-frame entity-collision + AI fast paths** (v3.0, 2026-05-26) — five mechanical optimizations in the entity-tick loop. All ZERO-behavior-change refactors (same final filter sets, just less wasted work per iteration). Combined fps lift varies by PAK; biggest on collision-bound scenes:
+  - **Step 14 (B+E entity-collision cull)** — `check_entity_collision_for()` is the O(N²) hot loop inside `arrange_ents()`. Profile data across 7 PAKs showed it consumed **28-42% of per-tick entity work** (the universal bottleneck). Added: (B) skip targets that don't carry an `animation->collision_entity` (engine would have returned 0 anyway — just skips the function call cost); (E) cheap 256-px rect cull before calling `check_entity_collision()` (256 px > any reasonable single-entity hitbox extent on a 320×224 game). Expected ~85% reduction in collision-pair work.
+  - **Step 15 (`normal_find_target` cheap-first reorder)** — many AI entities call `normal_find_target()` per think tick. Reordered the loop body so cheap field/bit tests (death-state, distance) run BEFORE expensive function calls (`faction_check_is_hostile`, `check_range_target_all`). Same filter, expensive checks skipped earlier for entities that would have been culled anyway.
+  - **Step 16a (`do_attack` invariant hoist + B-style pre-filter)** — `checkhit()` opens with 4 early-exit conditions; 3 are per-target, 1 is invariant. Hoisted the invariant out of the per-target loop + moved 3 per-target checks into the caller to skip the function call cost on non-hittable targets.
+  - **Step 16b (`block_find_target` reorder)** — short-circuit `&&` chain reordered cheap-first (same pattern as Step 15).
+  - **Step 16c (`find_ent_here` invariant hoist)** — `self->modeldata.grabdistance * 0.83333` and `/3` are invariants per call; hoisted out of the per-iteration `&&` chain. Used by grab moves and item pickup detection.
+- **PAK load-time hash-map cache** (v2.9, 2026-05-24) — `loadsprite()` cache lookup replaced from O(N) linear scan to O(1) hash table (262144 buckets, separate chaining, DJB2 hash with inline case-folding). Phase 1 + Phase 1.1 tunes shipped. Validated load-time reductions on heavy PAKs:
+  - Justice League Legacy: 213 s → **69.1 s (-68%)** ⭐
+  - Double Dragon Reloaded Alt: 73 s → **35 s (-52%)**
+  - A Tale of Vengeance: ~12 s → **1.87 s (-80%+)** ⭐
+  - TMNT Rescue Palooza / Avengers UBF / He-Man / PDC2: 25-50% reductions
+  - `[LOAD] PAK loaded in N ms` printf retained at end of `load_models()` for power-user tracking — `grep '\[LOAD\]' /media/fat/logs/OpenBOR_7533/OpenBorLog.txt`
+- **Loading bar clamp** (v2.9, 2026-05-23) — when a PAK declares a loading bar with `bsize=0` (cart-author shortcut meaning "no real bar requested") AND would otherwise show pure black during the multi-second model-cache init phase, the engine renders a default on-screen progress bar at the bottom-center (1/3 screen width, 25 px from bottom). Canonical case: Double Dragon Reloaded Alternate (previously showed ~70 sec of pure black before title screen — now shows visible progress). Gated narrowly (`s == &loadingbg[0] && size_x <= 0`) so PAKs with intentional on-screen bars (TMNT-RP, He-Man) or per-level `bgPosi` displays (Avengers UBF, Pocket Dimensional Clash 2) are unchanged — no duplicate bars.
 - **Native FPGA audio output** — 48 kHz stereo via DDR3 ring buffer, no ALSA. Audio kernel: **nearest-neighbor (zero-order hold)** at engine + wrapper (matches upstream OpenBOR `engine/source/gamelib/soundmix.c` FIX_TO_INT shift-truncation kernel at all three sample-read sites — music + 8-bit voice + 16-bit voice; wrapper at `patches/sblaster_patch.c::audio_thread_fn` mirrors the engine character — both stages NN).
 - **CRT support** — scanlines, shadow masks, and analog video output for CRT displays
 - **MiSTer OSD integration** — load PAK files from the file browser
 - **4-player support** — connect up to 4 controllers, add players by pressing START
-- **Custom pause menu** — Continue / Options / Reset Pak / Quit. Music and sound effects pause cleanly on menu entry, resume on Continue (audio-tail leak fixed 2026-05-22)
+- **Custom pause menu** — Continue / Options / Recording / Reset Pak / Quit. Music and sound effects pause cleanly on menu entry, resume on Continue (audio-tail leak fixed 2026-05-22)
+- **Gameplay recording & replay** — record a playthrough and watch it back hands-free, from the pause menu or the MiSTer OSD (`.inp` files); deterministic bit-for-bit playback, press any button to take over (see [Recording & Replay](#recording--replay))
 - **Auto-launch** — OpenBOR starts automatically when the core is loaded
-- **Sub-native PAKs scale automatically** — PAKs with native resolutions other than 320×224 (320×240 4086-era PAKs, sub-native PAKs at 480×272 / 960×480 / etc.) are anisotropic-nearest-neighbor-squished into the 320×224 Sega CD V28 NTSC active area edge-to-edge. NN matches engine render character (engine renders pixel-exact, wrapper preserves it; bilinear was ~4× more CPU for marginal benefit). Aspect distortion is intentional — matches Sega CD displayed area.
+- **Sub-native PAKs scale automatically** — PAKs with native resolutions other than 320×224 (320×240 4086-era PAKs, 480×272 PSP-widescreen PAKs like Pocket Dimensional Clash 2, 960×480 He-Man, 480×272 Avengers UBF, etc.) are anisotropic-nearest-neighbor-squished into the 320×224 Sega CD V28 NTSC active area edge-to-edge. NN matches engine render character (engine renders pixel-exact, wrapper preserves it; bilinear was ~4× more CPU for marginal benefit). Aspect distortion is intentional — matches Sega CD displayed area.
 
 ## Quick Install
 
@@ -104,7 +112,7 @@ Both `OpenBOR_4086` and `OpenBOR_7533` cores have identical support across these
 | Logs (with auto-prune N=10) | ✅ `/media/fat/logs/OpenBOR_4086/` | ✅ `/media/fat/logs/OpenBOR_7533/` |
 | Configs (`<pak>.cfg` + `default.cfg` + `<pak>.hi`) | ✅ `/media/fat/config/` (shared across sister cores) | ✅ shared with 4086 |
 | MGLs (`_Other/*.mgl` one-click launchers) | ✅ | ✅ |
-| Gameplay Recordings / TAS (`<pak>.inp`) | ✅ engine-native Record Game / Play Recording | ✅ same |
+| Gameplay recording & replay (`<pak>.inp`) | ✅ pause menu **or** MiSTer OSD "Load Replay"; deterministic bit-for-bit, hands-free, press any button to take over | ✅ same |
 | Gamepad (up to 4P, Start adds player) | ✅ | ✅ |
 | Keyboard | ❌ no (SDL keyboard not wired through dummy driver) | ❌ no |
 | Mouse | ❌ no (no native engine mouse support) | ❌ no |
@@ -128,10 +136,12 @@ Both `OpenBOR_4086` and `OpenBOR_7533` cores have identical support across these
 | **B** button     | Attack (primary punch/kick) | |
 | **Y** button     | Special / grab          | |
 | **X** button     | Attack2 (secondary attack) | |
+| **LB** (Left Bumper)  | Attack3            | e.g. Double Dragon style switch |
+| **RB** (Right Bumper) | Attack4            | |
 | **Menu / Start** | Start (insert coin / pause / add player) | |
 | **Xbox Guide (center)** | MiSTer OSD       | core's OSD overlay — framework-level, not per-core |
 
-CONF_STR: `J1,Attack,Jump,Special,Attack2,Start;` / `jn,A,B,X,Y,Start;`. MiSTer's `jn` extension uses SNES naming (`jn A`=Xbox B, `jn B`=Xbox A, `jn X`=Xbox Y, `jn Y`=Xbox X), so the defaults above pair `jn A` (Xbox B) → Attack, `jn B` (Xbox A) → Jump, `jn X` (Xbox Y) → Special, `jn Y` (Xbox X) → Attack2.
+CONF_STR: `J1,Attack,Jump,Special,Attack2,Attack3,Attack4,Start;` / `jn,A,B,X,Y,L,R,Start;`. MiSTer's `jn` extension uses SNES naming (`jn A`=Xbox B, `jn B`=Xbox A, `jn X`=Xbox Y, `jn Y`=Xbox X), so the defaults above pair `jn A` (Xbox B) → Attack, `jn B` (Xbox A) → Jump, `jn X` (Xbox Y) → Special, `jn Y` (Xbox X) → Attack2. Attack3/Attack4 (added 2026-07) sit on the shoulder bumpers -- `jn L` = Xbox LB -> Attack3, `jn R` = Xbox RB -> Attack4 -- so OpenBOR games that use all six action buttons (e.g. Ultimate/Legend of the Double Dragon shoulder-button style switching) are fully playable.
 
 Both OpenBOR_4086 and OpenBOR_7533 use the IDENTICAL mapping — sister-core swap (4086 ↔ 7533) preserves your input config. All 4 players use the same button layout. Remap buttons from the MiSTer OSD (press F12 or the OSD button on your IO board).
 
@@ -140,11 +150,106 @@ Both OpenBOR_4086 and OpenBOR_7533 use the IDENTICAL mapping — sister-core swa
 Press START during gameplay:
 
 - **Continue** — resume gameplay
-- **Options** — adjust Music Volume and SFX Volume with D-pad left/right
+- **Options** — adjust Music Volume and SFX Volume with D-pad left/right, and toggle **FPS Display**
+- **Recording** — record and play back your gameplay (see below)
 - **Reset Pak** — restart the current PAK fresh
 - **Quit** — exit to PAK browser
 
 Navigate with D-pad up/down. Press A to confirm, X to go back.
+
+## FPS Display
+
+*(OpenBOR_7533 build.)*
+
+Pause → **Options** → **FPS Display** turns on a live frame-rate read-out in the
+**bottom-right** corner. D-pad left/right or the select button toggles it.
+
+The number is colour-coded so you can read it at a glance without stopping:
+
+| colour | frame rate |
+|---|---|
+| 🔴 red | below 30 |
+| 🟡 yellow | 30 – 59 |
+| 🟢 green | 60 and above |
+
+It is drawn at the console's final output resolution rather than inside the game
+image, so it stays sharp on every PAK — including the ones that render at much
+higher internal resolutions and get scaled down.
+
+**It works while recording and while playing a recording back**, which is the main
+reason it exists: because replay is deterministic, you can record a session, play
+it back, and read the frame rate at every point of it — the same run, the same
+frames, every time. The read-out never becomes part of the `.inp` file; recordings
+store your button presses, not the picture.
+
+It starts **off** every time you load a PAK. It is a display overlay, so it does
+appear in screenshots while it is on.
+
+## Recording & Replay
+
+Record a playthrough and watch it back — deterministic, so a recording plays
+exactly what you did. There are two ways to play a recording back.
+
+**Why this is handy — and a great debugging tool.** A recording replays *exactly*
+what you did, every time, and you can replay it endlessly. Great for saving and
+re-watching a favorite run — but also a powerful way to find and fix problems: if
+you hit a bug, glitch, or crash, record the run that causes it and it will
+reproduce the *same* thing on demand, hands-free — no need to remember or replay it
+by hand. That makes an issue easy to pin down and easy to confirm once it's fixed
+(replay the same recording and see if it's gone). The `.inp` file captures the whole
+run, so you can keep it or share it.
+
+> ### What a recording contains, before you share one
+>
+> A `.inp` is not only your button presses — it also carries **that PAK's save
+> data**: your progress (`.sav`), the high-score table (`.hi`), and the
+> script-saves that hold unlocked characters. That is what lets someone else
+> replay a run you recorded partway through a game.
+>
+> So when you share a recording, you are sharing that PAK's save data with it —
+> including any name or initials you entered on a high-score screen.
+>
+> **Only replay recordings from people you trust.** Playing one restores the save
+> data it carries before the PAK starts, and OpenBOR's script-saves are
+> *executable engine script* — that is how mods persist unlocked characters, and
+> it is why they have to be included for a replay to match. Your own saves are
+> kept separate and are never modified, but a recording from a stranger does run
+> their data on your machine.
+
+**Recordings are saved as `.inp` files** in `/media/fat/games/OpenBOR/Replays/`.
+Each **Stop Recording** saves a **new numbered file** — `<pak>_1.inp`, `<pak>_2.inp`,
+… — so a new recording never overwrites an older one; you build a library per PAK.
+Each `.inp` is stamped with the PAK it was recorded on **and** the engine version.
+A recording only plays on its own PAK — if you load a replay while a different PAK is
+loaded, it won't start (load the matching PAK first). And if a later core update
+changes the game logic, an old replay may drift (a note is logged) — just press any
+button to take over.
+
+**From the pause menu** (START → **Recording**):
+
+- **Record** — restarts the PAK and records everything from the title screen
+  through your play. (It records from the start so playback can reproduce the
+  run exactly.)
+- **Stop Recording** — saves the recording to a new numbered `<pak>_N.inp` and
+  drops you back into the game.
+- **Play Recording** — restarts the PAK and plays your **latest** recording back
+  hands-free, driving through the menus into the game on its own. (To play an
+  older one, use the MiSTer OSD "Load Replay" and pick it.)
+- **Stop Playback** — end playback and take control.
+- **Take over any time** — during playback, just press any button and the
+  automated inputs stop instantly so you can play.
+
+**From the MiSTer OSD** (a second way to launch a replay):
+
+1. **Load PAK** — pick the PAK you want.
+2. **Load Replay** — open the **`Replays`** folder and pick the matching `.inp`
+   file. The PAK restarts and the recording plays back hands-free (press any
+   button to take over). You can re-load the same recording as many times as you
+   like.
+
+Playback is bit-for-bit accurate: recording and replay both start from a PAK
+restart, the random-number seed is captured and restored, and the engine's
+per-frame timing is locked so the run reproduces identically regardless of load.
 
 ## FPGA Technical Details
 
